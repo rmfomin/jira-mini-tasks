@@ -2,7 +2,7 @@
 // @name         Jira Mini Tasks
 // @description  Adds personal To-Do list linked to JIRA issues
 // @namespace    http://tampermonkey.net/
-// @version      0.2.5
+// @version      0.3.0
 // @author       rs.fomin@rbspayment.ru
 // @match        https://jira.theteamsoft.com/secure/*
 // @grant        GM_getValue
@@ -48,6 +48,27 @@
       });
     });
     globalMenuCloserAttached = true;
+  }
+
+  /** *********************************************
+   * Drag & Drop — глобальное состояние
+   * Описание: текущий перетаскиваемый элемент и пересчет порядка.
+   **********************************************/
+  let draggingId = null;
+
+  function persistOrderFromDom(listEl) {
+    const ids = Array.from(listEl.children)
+      .map((n) => n.dataset && n.dataset.id)
+      .filter(Boolean);
+    const tasks = loadTasks();
+    const map = new Map(tasks.map((t) => [String(t.id), t]));
+    const next = ids
+      .map((id) => map.get(String(id)))
+      .filter(Boolean);
+    if (next.length === tasks.length) {
+      saveTasks(next);
+      rerenderList(listEl, next);
+    }
   }
 
   /** **************************************
@@ -224,6 +245,14 @@
     row.style.borderRadius = '6px';
     row.dataset.id = String(task.id);
 
+    const drag = el('span', { className: 'tm-drag', text: '⠿' });
+    drag.style.cursor = 'grab';
+    drag.style.userSelect = 'none';
+    drag.style.color = '#9e9e9e';
+    drag.style.fontSize = '14px';
+    drag.style.lineHeight = '1';
+    drag.style.padding = '2px 4px';
+
     const checkbox = el('input', { type: 'checkbox' });
     checkbox.checked = !!task.done;
 
@@ -282,6 +311,7 @@
       deleteItem.style.background = '#fff';
     });
 
+    row.appendChild(drag);
     row.appendChild(checkbox);
     row.appendChild(text);
     row.appendChild(editBtn);
@@ -324,6 +354,59 @@
       const list = row.parentElement;
       if (list) {
         rerenderList(list, next);
+      }
+    });
+
+    // DnD — разрешаем перетаскивание только за ручку
+    drag.addEventListener('mousedown', () => {
+      row.draggable = true;
+    });
+    row.addEventListener('dragstart', (e) => {
+      if (!row.draggable) {
+        e.preventDefault();
+        return;
+      }
+      draggingId = row.dataset.id || null;
+      row.style.opacity = '0.6';
+      if (e.dataTransfer) {
+        e.dataTransfer.effectAllowed = 'move';
+        try {
+          e.dataTransfer.setData('text/plain', draggingId || '');
+        } catch (err) {
+        }
+      }
+    });
+    row.addEventListener('dragend', () => {
+      row.style.opacity = '1';
+      row.draggable = false;
+      draggingId = null;
+    });
+    row.addEventListener('dragover', (e) => {
+      if (!draggingId) {
+        return;
+      }
+      e.preventDefault();
+      const list = row.parentElement;
+      if (!list || !(list instanceof Node)) {
+        return;
+      }
+      const draggingEl = Array.from(list.children).find((n) => n.dataset && n.dataset.id === draggingId);
+      if (!draggingEl || draggingEl === row) {
+        return;
+      }
+      const rect = row.getBoundingClientRect();
+      const before = e.clientY < rect.top + rect.height / 2;
+      if (before) {
+        list.insertBefore(draggingEl, row);
+      } else {
+        list.insertBefore(draggingEl, row.nextSibling);
+      }
+    });
+    row.addEventListener('drop', (e) => {
+      e.preventDefault();
+      const list = row.parentElement;
+      if (list) {
+        persistOrderFromDom(list);
       }
     });
 
