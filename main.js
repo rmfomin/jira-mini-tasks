@@ -2,7 +2,7 @@
 // @name         Jira Mini Tasks
 // @description  Adds personal To-Do list linked to JIRA issues
 // @namespace    http://tampermonkey.net/
-// @version      0.2.2
+// @version      0.2.5
 // @author       rs.fomin@rbspayment.ru
 // @match        https://jira.theteamsoft.com/secure/*
 // @grant        GM_getValue
@@ -22,6 +22,33 @@
   const INIT_POLL_MS = 800;
   const INIT_POLL_MAX_TRIES = 60;
   const STORAGE_KEY = 'tmSmartTasks.items';
+
+  /** *********************************************
+   * Глобальный обработчик закрытия меню
+   * Описание: скрывает открытые меню по клику вне элемента.
+   **********************************************/
+  let globalMenuCloserAttached = false;
+  function setupGlobalMenuCloser() {
+    if (globalMenuCloserAttached) {
+      return;
+    }
+    document.addEventListener('click', (ev) => {
+      const target = ev.target;
+      if (!(target instanceof Node)) {
+        return;
+      }
+      const wraps = document.querySelectorAll('.tm-menu-wrap');
+      wraps.forEach((wrap) => {
+        if (!wrap.contains(target)) {
+          const menu = wrap.querySelector('.tm-item-menu');
+          if (menu) {
+            menu.style.display = 'none';
+          }
+        }
+      });
+    });
+    globalMenuCloserAttached = true;
+  }
 
   /** **************************************
    * Хранилище задач
@@ -209,24 +236,59 @@
       text.style.opacity = '0.7';
     }
 
-    const editBtn = el('button', { type: 'button', text: 'Редактировать' });
+    const editBtn = el('button', { type: 'button', title: 'Редактировать', 'aria-label': 'Редактировать', text: '✏️' });
     editBtn.style.padding = '4px 8px';
     editBtn.style.border = '1px solid #bdbdbd';
     editBtn.style.borderRadius = '6px';
     editBtn.style.background = '#f3f3f3';
     editBtn.style.cursor = 'pointer';
 
-    const deleteBtn = el('button', { type: 'button', text: 'Удалить' });
-    deleteBtn.style.padding = '4px 8px';
-    deleteBtn.style.border = '1px solid #bdbdbd';
-    deleteBtn.style.borderRadius = '6px';
-    deleteBtn.style.background = '#f3f3f3';
-    deleteBtn.style.cursor = 'pointer';
+    const menuWrap = el('div', { className: 'tm-menu-wrap' });
+    menuWrap.style.position = 'relative';
+
+    const menuBtn = el('button', { type: 'button', title: 'Меню', 'aria-label': 'Меню', text: '☰' });
+    menuBtn.style.padding = '4px 8px';
+    menuBtn.style.border = '1px solid #bdbdbd';
+    menuBtn.style.borderRadius = '6px';
+    menuBtn.style.background = '#f3f3f3';
+    menuBtn.style.cursor = 'pointer';
+
+    const menu = el('div', { className: 'tm-item-menu' });
+    menu.style.position = 'absolute';
+    menu.style.top = 'calc(100% + 4px)';
+    menu.style.right = '0';
+    menu.style.background = '#fff';
+    menu.style.border = '1px solid #e0e0e0';
+    menu.style.borderRadius = '6px';
+    menu.style.boxShadow = '0 2px 6px rgba(0,0,0,0.08)';
+    menu.style.padding = '4px';
+    menu.style.display = 'none';
+    menu.style.zIndex = '1000';
+
+    const deleteItem = el('button', { type: 'button', text: '🗑️' });
+    deleteItem.style.display = 'block';
+    deleteItem.style.width = '100%';
+    deleteItem.style.textAlign = 'left';
+    deleteItem.style.padding = '6px 8px';
+    deleteItem.style.border = '1px solid transparent';
+    deleteItem.style.borderRadius = '4px';
+    deleteItem.style.background = '#fff';
+    deleteItem.style.cursor = 'pointer';
+
+    deleteItem.addEventListener('mouseover', () => {
+      deleteItem.style.background = '#f6f6f6';
+    });
+    deleteItem.addEventListener('mouseout', () => {
+      deleteItem.style.background = '#fff';
+    });
 
     row.appendChild(checkbox);
     row.appendChild(text);
     row.appendChild(editBtn);
-    row.appendChild(deleteBtn);
+    menu.appendChild(deleteItem);
+    menuWrap.appendChild(menuBtn);
+    menuWrap.appendChild(menu);
+    row.appendChild(menuWrap);
 
     checkbox.addEventListener('change', () => {
       const tasks = loadTasks();
@@ -245,7 +307,17 @@
       startEditMode(row, task);
     });
 
-    deleteBtn.addEventListener('click', () => {
+    menuBtn.addEventListener('click', () => {
+      const allMenus = document.querySelectorAll('.tm-item-menu');
+      allMenus.forEach((m) => {
+        if (m !== menu) {
+          m.style.display = 'none';
+        }
+      });
+      menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+    });
+
+    deleteItem.addEventListener('click', () => {
       const tasks = loadTasks();
       const next = tasks.filter((x) => String(x.id) !== String(task.id));
       saveTasks(next);
@@ -291,12 +363,34 @@
     cancelBtn.style.cursor = 'pointer';
 
     row.replaceChild(input, currentTextEl);
-    const oldButtons = Array.from(row.querySelectorAll('button'));
-    oldButtons.forEach((btn) => {
-      row.removeChild(btn);
-    });
-    row.appendChild(saveBtn);
+    const oldEditBtn = Array.from(row.children).find((n) => n.tagName === 'BUTTON');
+    if (oldEditBtn) {
+      row.removeChild(oldEditBtn);
+    }
+    const oldMenuWrap = row.querySelector('.tm-menu-wrap');
+    if (oldMenuWrap) {
+      row.removeChild(oldMenuWrap);
+    }
+    // В режиме редактирования переносим действия под строку
+    row.style.flexWrap = 'wrap';
     row.appendChild(cancelBtn);
+
+    const actions = el('div', { className: 'tm-edit-actions' });
+    actions.style.display = 'flex';
+    actions.style.gap = '8px';
+    actions.style.marginTop = '6px';
+    actions.style.flexBasis = '100%';
+
+    const deleteUnderBtn = el('button', { type: 'button', text: 'Удалить' });
+    deleteUnderBtn.style.padding = '4px 8px';
+    deleteUnderBtn.style.border = '1px solid #bdbdbd';
+    deleteUnderBtn.style.borderRadius = '6px';
+    deleteUnderBtn.style.background = '#f3f3f3';
+    deleteUnderBtn.style.cursor = 'pointer';
+
+    actions.appendChild(saveBtn);
+    actions.appendChild(deleteUnderBtn);
+    row.appendChild(actions);
 
     input.focus();
     input.select();
@@ -322,6 +416,16 @@
       const list = row.parentElement;
       if (list) {
         rerenderList(list, loadTasks());
+      }
+    });
+
+    deleteUnderBtn.addEventListener('click', () => {
+      const tasks = loadTasks();
+      const next = tasks.filter((x) => String(x.id) !== String(task.id));
+      saveTasks(next);
+      const list = row.parentElement;
+      if (list) {
+        rerenderList(list, next);
       }
     });
 
@@ -381,6 +485,7 @@
 
     const tasks = loadTasks();
     renderUI(wrapper, tasks);
+    setupGlobalMenuCloser();
   }
 
   /** *****************************************
