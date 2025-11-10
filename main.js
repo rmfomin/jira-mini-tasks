@@ -2,7 +2,7 @@
 // @name         Jira Mini Tasks
 // @description  Adds personal To-Do list linked to JIRA issues
 // @namespace    http://tampermonkey.net/
-// @version      0.2.1
+// @version      0.2.2
 // @author       rs.fomin@rbspayment.ru
 // @match        https://jira.theteamsoft.com/secure/*
 // @grant        GM_getValue
@@ -216,9 +216,17 @@
     editBtn.style.background = '#f3f3f3';
     editBtn.style.cursor = 'pointer';
 
+    const deleteBtn = el('button', { type: 'button', text: 'Удалить' });
+    deleteBtn.style.padding = '4px 8px';
+    deleteBtn.style.border = '1px solid #bdbdbd';
+    deleteBtn.style.borderRadius = '6px';
+    deleteBtn.style.background = '#f3f3f3';
+    deleteBtn.style.cursor = 'pointer';
+
     row.appendChild(checkbox);
     row.appendChild(text);
     row.appendChild(editBtn);
+    row.appendChild(deleteBtn);
 
     checkbox.addEventListener('change', () => {
       const tasks = loadTasks();
@@ -235,6 +243,16 @@
 
     editBtn.addEventListener('click', () => {
       startEditMode(row, task);
+    });
+
+    deleteBtn.addEventListener('click', () => {
+      const tasks = loadTasks();
+      const next = tasks.filter((x) => String(x.id) !== String(task.id));
+      saveTasks(next);
+      const list = row.parentElement;
+      if (list) {
+        rerenderList(list, next);
+      }
     });
 
     return row;
@@ -273,10 +291,10 @@
     cancelBtn.style.cursor = 'pointer';
 
     row.replaceChild(input, currentTextEl);
-    const oldEditBtn = Array.from(row.children).find((n) => n.tagName === 'BUTTON');
-    if (oldEditBtn) {
-      row.removeChild(oldEditBtn);
-    }
+    const oldButtons = Array.from(row.querySelectorAll('button'));
+    oldButtons.forEach((btn) => {
+      row.removeChild(btn);
+    });
     row.appendChild(saveBtn);
     row.appendChild(cancelBtn);
 
