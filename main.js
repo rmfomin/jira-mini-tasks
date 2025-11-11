@@ -163,6 +163,38 @@
   }
 
   /** *********************************************
+   * Автоподгон высоты textarea под содержимое
+   * Описание: убирает вертикальный скролл и растит поле по мере ввода.
+   **********************************************/
+  function autosizeTextarea(ta) {
+    if (!ta) return;
+    const maxLines = 6;
+    const resize = () => {
+      // Считаем по контенту: min/max по высоте содержимого без padding/border
+      const cs = getComputedStyle(ta);
+      const line = parseFloat(cs.lineHeight) || parseFloat(cs.fontSize) || 16;
+      const pt = parseFloat(cs.paddingTop) || 0;
+      const pb = parseFloat(cs.paddingBottom) || 0;
+      const padding = pt + pb; // scrollHeight включает padding
+
+      ta.style.height = 'auto';
+      const raw = ta.scrollHeight; // контент + padding
+      const contentRaw = Math.max(0, raw - padding);
+      const minContent = Math.ceil(line);
+      const maxContent = Math.ceil(line * maxLines);
+      const contentNext = Math.min(Math.max(contentRaw, minContent), maxContent);
+
+      ta.style.height = `${contentNext}px`; // задаём высоту контент-бокса
+      ta.style.overflowY = contentRaw > maxContent ? 'auto' : 'hidden';
+    };
+    ta.addEventListener('input', resize);
+    // Первичный и отложенный пересчёт (на случай вставки в DOM позже)
+    resize();
+    requestAnimationFrame(resize);
+    setTimeout(resize, 0);
+  }
+
+  /** *********************************************
    * Рендер UI todo-листа
    * Описание: строит форму добавления и список задач.
    **********************************************/
@@ -172,23 +204,42 @@
     form.style.display = 'flex';
     form.style.gap = '8px';
     form.style.marginBottom = '10px';
+    form.style.flexWrap = 'wrap';
 
-    const input = el('input', { type: 'text', placeholder: 'Новая задача…', id: 'tm-input' });
+    const input = el('textarea', { placeholder: 'Новая задача…', id: 'tm-input', rows: '1', wrap: 'soft' });
     input.style.flex = '1';
     input.style.padding = '6px 8px';
     input.style.border = '1px solid #dcdcdc';
     input.style.borderRadius = '6px';
+    input.style.resize = 'none';
+    input.style.overflow = 'hidden';
+    input.style.lineHeight = '1.4';
 
-    const addBtn = el('button', { type: 'button', id: 'tm-add-btn', text: 'Добавить' });
+    const addBtn = el('button', { type: 'button', id: 'tm-add-btn', text: '➤' });
     addBtn.style.padding = '6px 10px';
     addBtn.style.border = '1px solid #3572b0';
     addBtn.style.borderRadius = '6px';
     addBtn.style.background = '#4a9ae9';
     addBtn.style.color = '#fff';
     addBtn.style.cursor = 'pointer';
+    // Не растягивать кнопку по высоте вместе с textarea
+    addBtn.style.height = '32px';
+    addBtn.style.display = 'inline-flex';
+    addBtn.style.alignItems = 'center';
+    addBtn.style.justifyContent = 'center';
+    addBtn.style.flex = '0 0 auto';
+    addBtn.style.alignSelf = 'flex-start';
 
     form.appendChild(input);
     form.appendChild(addBtn);
+    const hintAdd = el('div', { className: 'tm-hint-add', text: 'Ctrl/Cmd+Enter — добавить' });
+    hintAdd.style.fontSize = '12px';
+    hintAdd.style.color = '#777';
+    hintAdd.style.flexBasis = '100%';
+    hintAdd.style.marginTop = '-4px';
+    form.appendChild(hintAdd);
+    // После вставки в DOM корректно вычисляем высоту
+    autosizeTextarea(input);
 
     const list = el('div', { id: 'tm-list' });
     list.style.display = 'flex';
@@ -219,12 +270,16 @@
       ];
       saveTasks(next);
       input.value = '';
+      // Вернуть поле к высоте в одну строку
+      input.dispatchEvent(new Event('input'));
       rerenderList(list, next);
       input.focus();
     });
 
+    // Добавление по Ctrl/Cmd+Enter, Enter делает перенос строки
     input.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
+      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
         addBtn.click();
       }
     });
@@ -292,7 +347,7 @@
     menu.style.display = 'none';
     menu.style.zIndex = '1000';
 
-    const deleteItem = el('button', { type: 'button', text: '🗑\u2002Удалить' });
+    const deleteItem = el('button', { type: 'button', text: 'Удалить' });
     deleteItem.style.display = 'block';
     deleteItem.style.width = '100%';
     deleteItem.style.textAlign = 'left';
@@ -359,6 +414,11 @@
 
     // DnD — разрешаем перетаскивание только за ручку
     drag.addEventListener('mousedown', () => {
+      // Не разрешаем перетаскивание в режиме редактирования
+      if (row.dataset && row.dataset.editing === '1') {
+        row.draggable = false;
+        return;
+      }
       row.draggable = true;
     });
     row.addEventListener('dragstart', (e) => {
@@ -423,12 +483,15 @@
       return;
     }
 
-    const input = el('input', { type: 'text' });
+    const input = el('textarea', { rows: '1', wrap: 'soft' });
     input.value = task.text;
     input.style.flex = '1';
     input.style.padding = '4px 6px';
     input.style.border = '1px solid #dcdcdc';
     input.style.borderRadius = '6px';
+    input.style.resize = 'none';
+    input.style.overflow = 'hidden';
+    input.style.lineHeight = '1.4';
 
     const saveBtn = el('button', { type: 'button', text: 'Сохранить' });
     saveBtn.style.padding = '4px 8px';
@@ -453,7 +516,15 @@
     }
     // В режиме редактирования переносим действия под строку
     row.style.flexWrap = 'wrap';
-    row.appendChild(cancelBtn);
+    // Помечаем строку как редактируемую и отключаем ручку перетаскивания
+    row.dataset.editing = '1';
+    const dragHandle = row.querySelector('.tm-drag');
+    if (dragHandle) {
+      dragHandle.style.cursor = 'not-allowed';
+      dragHandle.style.opacity = '0.5';
+      dragHandle.style.pointerEvents = 'none';
+    }
+    row.draggable = false;
 
     const actions = el('div', { className: 'tm-edit-actions' });
     actions.style.display = 'flex';
@@ -462,7 +533,16 @@
     actions.style.flexBasis = '100%';
 
     actions.appendChild(saveBtn);
+    actions.appendChild(cancelBtn);
     row.appendChild(actions);
+    // После вставки поля в DOM скорректируем высоту
+    autosizeTextarea(input);
+    const hintEdit = el('div', { className: 'tm-hint-edit', text: 'Ctrl/Cmd+Enter — сохранить, Esc — отменить' });
+    hintEdit.style.fontSize = '12px';
+    hintEdit.style.color = '#777';
+    hintEdit.style.flexBasis = '100%';
+    hintEdit.style.marginTop = '2px';
+    row.appendChild(hintEdit);
 
     input.focus();
     input.select();
@@ -494,9 +574,11 @@
     // Кнопка удаления в режиме редактирования удалена по требованию
 
     input.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
+      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
         saveBtn.click();
       } else if (e.key === 'Escape') {
+        e.preventDefault();
         cancelBtn.click();
       }
     });
