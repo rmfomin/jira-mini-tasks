@@ -293,6 +293,7 @@
     const row = el('div', { className: 'tm-item' });
     row.style.display = 'flex';
     row.style.alignItems = 'center';
+    row.style.flexWrap = 'wrap';
     row.style.gap = '8px';
     row.style.padding = '6px';
     row.style.border = '1px solid #ededed';
@@ -322,6 +323,8 @@
       text.style.textDecoration = 'line-through';
       text.style.opacity = '0.7';
     }
+
+    // Примечание: ссылка Jira будет добавлена после основных элементов, чтобы оказаться под задачей
 
     // Кнопка редактирования убрана — редактирование открывается по клику на текст
 
@@ -373,6 +376,25 @@
     menuWrap.appendChild(menuBtn);
     menuWrap.appendChild(menu);
     row.appendChild(menuWrap);
+
+    // Jira-ссылка под задачей (если есть). Одна строка с многоточием.
+    if (task.jiraUrl || task.jiraText) {
+      const jiraView = el('div', { className: 'tm-jira-link-wrap' });
+      jiraView.style.flexBasis = '100%';
+      jiraView.style.marginTop = '4px';
+      jiraView.style.overflow = 'hidden';
+      const linkText = task.jiraText || task.jiraUrl || '';
+      const jiraA = el('a', { href: task.jiraUrl || '#', text: linkText, target: '_blank', rel: 'noopener noreferrer' });
+      jiraA.style.color = '#3572b0';
+      jiraA.style.textDecoration = 'underline';
+      jiraA.style.display = 'inline-block';
+      jiraA.style.maxWidth = '100%';
+      jiraA.style.whiteSpace = 'nowrap';
+      jiraA.style.overflow = 'hidden';
+      jiraA.style.textOverflow = 'ellipsis';
+      jiraView.appendChild(jiraA);
+      row.appendChild(jiraView);
+    }
 
     checkbox.addEventListener('change', () => {
       const tasks = loadTasks();
@@ -532,8 +554,69 @@
     actions.style.marginTop = '6px';
     actions.style.flexBasis = '100%';
 
+    // Кнопка для добавления/удаления Jira-ссылки
+    let jiraEnabled = !!(task.jiraUrl);
+    let jiraViewRef = null; // будет заполнен ниже, если превью существует
+    const jiraBtn = el('button', { type: 'button' });
+    jiraBtn.style.padding = '4px 8px';
+    jiraBtn.style.border = '1px solid #bdbdbd';
+    jiraBtn.style.borderRadius = '6px';
+    jiraBtn.style.background = '#f3f3f3';
+    jiraBtn.style.cursor = 'pointer';
+    const setJiraBtnText = () => {
+      jiraBtn.textContent = jiraEnabled ? '− Jira' : '+ Jira';
+    };
+    setJiraBtnText();
+
+    // Область ввода Jira-ссылки (появляется по нажатию "Добавить")
+    const jiraWrap = el('div', { className: 'tm-jira-edit' });
+    jiraWrap.style.display = 'none';
+    jiraWrap.style.flexBasis = '94%'; // todo как-то поправить 94
+    jiraWrap.style.marginTop = '6px';
+    const jiraInput = el('input', { type: 'text', placeholder: '[[UI-5320] Название](https://jira.theteamsoft.com/browse/UI-5320)' });
+    jiraInput.style.width = '100%';
+    jiraInput.style.padding = '6px 8px';
+    jiraInput.style.border = '1px solid #dcdcdc';
+    jiraInput.style.borderRadius = '6px';
+    jiraWrap.appendChild(jiraInput);
+
+    // Если уже есть Jira-ссылка, не показываем инпут до клика, но подготовим значение
+    const toMarkdown = (text, url) => (text && url ? `[${text}](${url})` : (url ? url : ''));
+    const fromMarkdown = (src) => {
+      if (!src) return null;
+      const m = src.match(/^\s*\[(.+?)\]\((https?:\/\/[^)\s]+)\)\s*$/);
+      if (m) return { text: m[1], url: m[2] };
+      // fallback: если просто URL
+      const urlMatch = src.match(/https?:\/\/[^\s)]+/);
+      if (urlMatch) return { text: src.replace(urlMatch[0], '').trim() || urlMatch[0], url: urlMatch[0] };
+      return null;
+    };
+
+    jiraBtn.addEventListener('click', () => {
+      jiraEnabled = !jiraEnabled;
+      setJiraBtnText();
+      if (jiraEnabled) {
+        jiraWrap.style.display = 'block';
+        if (!jiraInput.value) {
+          jiraInput.value = toMarkdown(task.jiraText || '', task.jiraUrl || '');
+        }
+        jiraInput.focus();
+        // Возвращаем превью, если оно было и мы снова включаем Jira
+        if (jiraViewRef) {
+          jiraViewRef.style.display = 'block';
+        }
+      } else {
+        jiraWrap.style.display = 'none';
+        // Визуально скрываем превью ссылки до сохранения
+        if (jiraViewRef) {
+          jiraViewRef.style.display = 'none';
+        }
+      }
+    });
+
     actions.appendChild(saveBtn);
     actions.appendChild(cancelBtn);
+    actions.appendChild(jiraBtn);
     row.appendChild(actions);
     // После вставки поля в DOM скорректируем высоту
     autosizeTextarea(input);
@@ -543,6 +626,9 @@
     hintEdit.style.flexBasis = '100%';
     hintEdit.style.marginTop = '2px';
     row.appendChild(hintEdit);
+    row.appendChild(jiraWrap);
+    // Используем уже существующее превью Jira-ссылки в строке
+    jiraViewRef = row.querySelector('.tm-jira-link-wrap') || null;
 
     input.focus();
     input.select();
@@ -556,6 +642,24 @@
       const idx = tasks.findIndex((x) => String(x.id) === String(task.id));
       if (idx !== -1) {
         tasks[idx].text = val;
+        // Применяем Jira-ссылку согласно состоянию
+        if (!jiraEnabled) {
+          delete tasks[idx].jiraUrl;
+          delete tasks[idx].jiraText;
+        } else {
+          // Если показан инпут и есть значение — парсим
+          if (jiraWrap.style.display !== 'none' && jiraInput.value.trim()) {
+            const parsed = fromMarkdown(jiraInput.value.trim());
+            if (parsed) {
+              tasks[idx].jiraUrl = parsed.url;
+              tasks[idx].jiraText = parsed.text;
+            }
+          } else if (task.jiraUrl) {
+            // оставляем существующие значения, если инпут не трогали
+            tasks[idx].jiraUrl = task.jiraUrl;
+            tasks[idx].jiraText = task.jiraText;
+          }
+        }
         saveTasks(tasks);
         const list = row.parentElement;
         if (list) {
