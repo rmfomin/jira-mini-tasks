@@ -13,10 +13,15 @@
   'use strict';
 
   /** *******************************
+   * Настройки
+   **********************************/
+  const numberId = '20269';
+
+  /** *******************************
    * Константы
    **********************************/
-  const GADGET_ID = 'gadget-20269-chrome';
-  const HEADER_SELECTOR = 'dashboard-item-header > h2.gadget-20269-title';
+  const GADGET_ID = `gadget-${numberId}-chrome`;
+  const HEADER_SELECTOR = `dashboard-item-header > h2.gadget-${numberId}-title`;
   const CONTENT_SELECTOR = '.dashboard-item-content';
   const WRAPPER_ID = 'tm-smart-tasks';
   const INIT_POLL_MS = 800;
