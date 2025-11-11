@@ -21,7 +21,7 @@
    * Константы
    **********************************/
   const GADGET_ID = `gadget-${numberId}-chrome`;
-  const HEADER_SELECTOR = `dashboard-item-header > h2.gadget-${numberId}-title`;
+  const HEADER_SELECTOR = `#gadget-${numberId}-title`;
   const CONTENT_SELECTOR = '.dashboard-item-content';
   const WRAPPER_ID = 'tm-smart-tasks';
   const INIT_POLL_MS = 800;
@@ -168,11 +168,6 @@
    **********************************************/
   function renderUI(root, initialTasks) {
     empty(root);
-
-    const title = el('div', { className: 'tm-title', text: 'Smart Tasks' });
-    title.style.fontWeight = '600';
-    title.style.marginBottom = '8px';
-
     const form = el('div', { className: 'tm-form' });
     form.style.display = 'flex';
     form.style.gap = '8px';
@@ -204,7 +199,6 @@
       list.appendChild(renderItem(t));
     });
 
-    root.appendChild(title);
     root.appendChild(form);
     root.appendChild(list);
 
@@ -254,28 +248,27 @@
     drag.style.cursor = 'grab';
     drag.style.userSelect = 'none';
     drag.style.color = '#9e9e9e';
-    drag.style.fontSize = '14px';
+    drag.style.fontSize = '20px';
     drag.style.lineHeight = '1';
     drag.style.padding = '2px 4px';
 
     const checkbox = el('input', { type: 'checkbox' });
     checkbox.checked = !!task.done;
+    checkbox.style.transform = 'scale(1.3)';
+    checkbox.style.margin = '0';
 
     const text = el('span', { className: 'tm-item-text', text: task.text });
     text.style.flex = '1';
     text.style.userSelect = 'none';
     text.style.wordBreak = 'break-word';
+    text.style.cursor = 'text';
+    text.title = 'Нажмите, чтобы редактировать';
     if (task.done) {
       text.style.textDecoration = 'line-through';
       text.style.opacity = '0.7';
     }
 
-    const editBtn = el('button', { type: 'button', title: 'Редактировать', 'aria-label': 'Редактировать', text: '✏️' });
-    editBtn.style.padding = '4px 8px';
-    editBtn.style.border = '1px solid #bdbdbd';
-    editBtn.style.borderRadius = '6px';
-    editBtn.style.background = '#f3f3f3';
-    editBtn.style.cursor = 'pointer';
+    // Кнопка редактирования убрана — редактирование открывается по клику на текст
 
     const menuWrap = el('div', { className: 'tm-menu-wrap' });
     menuWrap.style.position = 'relative';
@@ -299,7 +292,7 @@
     menu.style.display = 'none';
     menu.style.zIndex = '1000';
 
-    const deleteItem = el('button', { type: 'button', text: '🗑️' });
+    const deleteItem = el('button', { type: 'button', text: '🗑\u2002Удалить' });
     deleteItem.style.display = 'block';
     deleteItem.style.width = '100%';
     deleteItem.style.textAlign = 'left';
@@ -308,6 +301,7 @@
     deleteItem.style.borderRadius = '4px';
     deleteItem.style.background = '#fff';
     deleteItem.style.cursor = 'pointer';
+    deleteItem.style.whiteSpace = 'nowrap';
 
     deleteItem.addEventListener('mouseover', () => {
       deleteItem.style.background = '#f6f6f6';
@@ -319,7 +313,7 @@
     row.appendChild(drag);
     row.appendChild(checkbox);
     row.appendChild(text);
-    row.appendChild(editBtn);
+    // Кнопка редактирования не добавляется
     menu.appendChild(deleteItem);
     menuWrap.appendChild(menuBtn);
     menuWrap.appendChild(menu);
@@ -338,7 +332,8 @@
       }
     });
 
-    editBtn.addEventListener('click', () => {
+    // Открываем редактирование кликом по тексту задачи
+    text.addEventListener('click', () => {
       startEditMode(row, task);
     });
 
@@ -451,10 +446,7 @@
     cancelBtn.style.cursor = 'pointer';
 
     row.replaceChild(input, currentTextEl);
-    const oldEditBtn = Array.from(row.children).find((n) => n.tagName === 'BUTTON');
-    if (oldEditBtn) {
-      row.removeChild(oldEditBtn);
-    }
+    // Кнопка редактирования удалена из разметки — ничего убирать не нужно
     const oldMenuWrap = row.querySelector('.tm-menu-wrap');
     if (oldMenuWrap) {
       row.removeChild(oldMenuWrap);
@@ -469,15 +461,7 @@
     actions.style.marginTop = '6px';
     actions.style.flexBasis = '100%';
 
-    const deleteUnderBtn = el('button', { type: 'button', text: 'Удалить' });
-    deleteUnderBtn.style.padding = '4px 8px';
-    deleteUnderBtn.style.border = '1px solid #bdbdbd';
-    deleteUnderBtn.style.borderRadius = '6px';
-    deleteUnderBtn.style.background = '#f3f3f3';
-    deleteUnderBtn.style.cursor = 'pointer';
-
     actions.appendChild(saveBtn);
-    actions.appendChild(deleteUnderBtn);
     row.appendChild(actions);
 
     input.focus();
@@ -507,15 +491,7 @@
       }
     });
 
-    deleteUnderBtn.addEventListener('click', () => {
-      const tasks = loadTasks();
-      const next = tasks.filter((x) => String(x.id) !== String(task.id));
-      saveTasks(next);
-      const list = row.parentElement;
-      if (list) {
-        rerenderList(list, next);
-      }
-    });
+    // Кнопка удаления в режиме редактирования удалена по требованию
 
     input.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
@@ -548,7 +524,7 @@
 
     const headerEl = gadgetEl.querySelector(HEADER_SELECTOR);
     if (headerEl) {
-      headerEl.textContent = 'Smart Tasks — draft';
+      headerEl.textContent = 'Jira Mini Tasks';
     }
 
     const contentEl = gadgetEl.querySelector(CONTENT_SELECTOR);
@@ -564,7 +540,7 @@
     empty(contentEl);
 
     const wrapper = el('div', { id: WRAPPER_ID });
-    wrapper.style.padding = '8px 10px';
+    wrapper.style.padding = '12px 12px';
     wrapper.style.border = '1px solid #e5e5e5';
     wrapper.style.borderRadius = '8px';
     wrapper.style.background = '#fff';
