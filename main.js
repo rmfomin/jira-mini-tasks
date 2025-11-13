@@ -136,6 +136,55 @@
   }
 
   /** *********************************************
+   * Обертка для запросов к Jira REST API
+   * Описание: единая функция с логированием, JSON-парсингом и обработкой ошибок.
+   **********************************************/
+  function jiraRequest({ method = 'GET', url, body = null, message = null }) {
+    if (!url) {
+      console.error('tpm:error', 'URL is required');
+      return Promise.resolve(null);
+    }
+
+    return fetch(url, {
+      method,
+      credentials: 'include',
+      headers: {
+        Accept: 'application/json',
+        ...(body ? { 'Content-Type': 'application/json' } : {}),
+      },
+      body: body ? JSON.stringify(body) : null,
+    })
+      .then(async (res) => {
+        const text = await res.text();
+
+        if (!res.ok) {
+          console.error('tpm:error', res.status, text);
+          return null;
+        }
+
+        let json = null;
+        try {
+          json = JSON.parse(text);
+        } catch (e) {
+          console.warn('tpm: not JSON', text);
+          return text;
+        }
+
+        if (message) {
+          console.log(`tpm message: ${message}`);
+        }
+
+        console.log('tpm: json =', json);
+
+        return json;
+      })
+      .catch((err) => {
+        console.error('tpm:error', err);
+        return null;
+      });
+  }
+
+  /** *********************************************
    * Создание элемента с атрибутами
    * Описание: упрощает создание DOM-узлов.
    **********************************************/
@@ -251,6 +300,49 @@
     });
 
     root.appendChild(form);
+
+    // Панель с примерами API-запросов к Jira
+    const apiBar = el('div', { className: 'tm-api-bar' });
+    apiBar.style.display = 'flex';
+    apiBar.style.gap = '8px';
+    apiBar.style.margin = '6px 0 10px';
+
+    const btnSearchMy = el('button', { type: 'button', text: 'API: Мои задачи' });
+    btnSearchMy.style.padding = '4px 8px';
+    btnSearchMy.style.border = '1px solid #3572b0';
+    btnSearchMy.style.borderRadius = '6px';
+    btnSearchMy.style.background = '#e8f2fd';
+    btnSearchMy.style.cursor = 'pointer';
+    btnSearchMy.addEventListener('click', () => {
+      jiraRequest({
+        method: 'POST',
+        url: 'https://jira.theteamsoft.com/rest/api/2/search',
+        body: {
+          jql: 'assignee = currentUser() ORDER BY created DESC',
+          maxResults: 10,
+          fields: ['key', 'summary', 'status'],
+        },
+        message: 'tpm: +++ search my issues',
+      });
+    });
+
+    const btnServerInfo = el('button', { type: 'button', text: 'API: ServerInfo' });
+    btnServerInfo.style.padding = '4px 8px';
+    btnServerInfo.style.border = '1px solid #3572b0';
+    btnServerInfo.style.borderRadius = '6px';
+    btnServerInfo.style.background = '#e8f2fd';
+    btnServerInfo.style.cursor = 'pointer';
+    btnServerInfo.addEventListener('click', () => {
+      jiraRequest({
+        method: 'GET',
+        url: 'https://jira.theteamsoft.com/rest/api/2/serverInfo',
+        message: 'tpm: +++ serverInfo',
+      });
+    });
+
+    apiBar.appendChild(btnSearchMy);
+    apiBar.appendChild(btnServerInfo);
+    root.appendChild(apiBar);
     root.appendChild(list);
 
     addBtn.addEventListener('click', () => {
