@@ -9,15 +9,21 @@ let globalMenuCloserAttached = false;
 
 /** Глобальный обработчик закрытия меню */
 export function setupGlobalMenuCloser() {
-  if (globalMenuCloserAttached) return;
+  if (globalMenuCloserAttached) {
+    return;
+  }
   document.addEventListener('click', (ev) => {
     const target = ev.target;
-    if (!(target instanceof Node)) return;
+    if (!(target instanceof Node)) {
+      return;
+    }
     const wraps = document.querySelectorAll('.tm-menu-wrap');
     wraps.forEach((wrap) => {
       if (!wrap.contains(target)) {
         const menu = wrap.querySelector('.tm-item-menu');
-        if (menu) menu.style.display = 'none';
+        if (menu) {
+          menu.style.display = 'none';
+        }
       }
     });
   });
@@ -26,16 +32,24 @@ export function setupGlobalMenuCloser() {
 
 /** Инициализация каркаса и UI */
 export function bootstrap(gadgetEl) {
-  if (!gadgetEl) return;
+  if (!gadgetEl) {
+    return;
+  }
 
   const headerEl = gadgetEl.querySelector(HEADER_SELECTOR);
-  if (headerEl) headerEl.textContent = 'Jira Mini Tasks';
+  if (headerEl) {
+    headerEl.textContent = 'Jira Mini Tasks';
+  }
 
   const contentEl = gadgetEl.querySelector(CONTENT_SELECTOR);
-  if (!contentEl) return;
+  if (!contentEl) {
+    return;
+  }
 
   const alreadyMounted = contentEl.querySelector(`#${WRAPPER_ID}`);
-  if (alreadyMounted) return;
+  if (alreadyMounted) {
+    return;
+  }
 
   empty(contentEl);
 
@@ -57,4 +71,3 @@ export function bootstrap(gadgetEl) {
 export function main() {
   pollForGadget(bootstrap);
 }
-

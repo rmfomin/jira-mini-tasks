@@ -5,7 +5,9 @@ export function loadTasks() {
   try {
     const raw = GM_getValue(STORAGE_KEY, '[]');
     const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed)) return parsed;
+    if (Array.isArray(parsed)) {
+      return parsed;
+    }
     return [];
   } catch (e) {
     return [];
@@ -18,4 +20,3 @@ export function saveTasks(tasks) {
     GM_setValue(STORAGE_KEY, JSON.stringify(tasks));
   } catch (e) {}
 }
-

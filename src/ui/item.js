@@ -108,7 +108,9 @@ export function renderItem(task) {
       tasks[idx].done = !!checkbox.checked;
       saveTasks(tasks);
       const list = row.parentElement;
-      if (list) rerenderList(list, tasks, renderItem);
+      if (list) {
+        rerenderList(list, tasks, renderItem);
+      }
     }
   });
 
@@ -116,7 +118,11 @@ export function renderItem(task) {
 
   menuBtn.addEventListener('click', () => {
     const allMenus = document.querySelectorAll('.tm-item-menu');
-    allMenus.forEach((m) => { if (m !== menu) m.style.display = 'none'; });
+    allMenus.forEach((m) => {
+      if (m !== menu) {
+        m.style.display = 'none';
+      }
+    });
     menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
   });
 
@@ -125,7 +131,9 @@ export function renderItem(task) {
     const next = tasks.filter((x) => String(x.id) !== String(task.id));
     saveTasks(next);
     const list = row.parentElement;
-    if (list) rerenderList(list, next, renderItem);
+    if (list) {
+      rerenderList(list, next, renderItem);
+    }
   });
 
   // DnD
@@ -154,15 +162,25 @@ export function renderItem(task) {
     setDraggingId(null);
   });
   row.addEventListener('dragover', (e) => {
-    if (!getDraggingId()) return;
+    if (!getDraggingId()) {
+      return;
+    }
     e.preventDefault();
     const list = row.parentElement;
-    if (!list || !(list instanceof Node)) return;
+    if (!list || !(list instanceof Node)) {
+      return;
+    }
     const draggingEl = Array.from(list.children).find((n) => n.dataset && n.dataset.id === getDraggingId());
-    if (!draggingEl || draggingEl === row) return;
+    if (!draggingEl || draggingEl === row) {
+      return;
+    }
     const rect = row.getBoundingClientRect();
     const before = e.clientY < rect.top + rect.height / 2;
-    if (before) list.insertBefore(draggingEl, row); else list.insertBefore(draggingEl, row.nextSibling);
+    if (before) {
+      list.insertBefore(draggingEl, row);
+    } else {
+      list.insertBefore(draggingEl, row.nextSibling);
+    }
   });
   row.addEventListener('drop', (e) => {
     e.preventDefault();
@@ -181,7 +199,9 @@ export function renderItem(task) {
  */
 export function startEditMode(row, task) {
   const currentTextEl = row.querySelector('.tm-item-text');
-  if (!currentTextEl) return;
+  if (!currentTextEl) {
+    return;
+  }
 
   const input = el('textarea', { rows: '1', wrap: 'soft' });
   input.value = task.text;
@@ -210,7 +230,9 @@ export function startEditMode(row, task) {
 
   row.replaceChild(input, currentTextEl);
   const oldMenuWrap = row.querySelector('.tm-menu-wrap');
-  if (oldMenuWrap) row.removeChild(oldMenuWrap);
+  if (oldMenuWrap) {
+    row.removeChild(oldMenuWrap);
+  }
   row.style.flexWrap = 'wrap';
   row.dataset.editing = '1';
   const dragHandle = row.querySelector('.tm-drag');
@@ -251,7 +273,9 @@ export function startEditMode(row, task) {
 
   const toMarkdown = (text, url) => (text && url ? `[${text}](${url})` : (url ? url : ''));
   const fromMarkdown = (src) => {
-    if (!src) return null;
+    if (!src) {
+      return null;
+    }
     const m = src.match(/^\s*\[(.+?)\]\((https?:\/\/[^)\s]+)\)\s*$/);
     if (m) return { text: m[1], url: m[2] };
     const urlMatch = src.match(/https?:\/\/[^\s)]+/);
@@ -268,10 +292,14 @@ export function startEditMode(row, task) {
         jiraInput.value = toMarkdown(task.jiraText || '', task.jiraUrl || '');
       }
       jiraInput.focus();
-      if (jiraViewRef) jiraViewRef.style.display = 'block';
+      if (jiraViewRef) {
+        jiraViewRef.style.display = 'block';
+      }
     } else {
       jiraWrap.style.display = 'none';
-      if (jiraViewRef) jiraViewRef.style.display = 'none';
+      if (jiraViewRef) {
+        jiraViewRef.style.display = 'none';
+      }
     }
   });
 
@@ -294,7 +322,9 @@ export function startEditMode(row, task) {
 
   saveBtn.addEventListener('click', () => {
     const val = String(input.value || '').trim();
-    if (val.length === 0) return;
+    if (val.length === 0) {
+      return;
+    }
     const tasks = loadTasks();
     const idx = tasks.findIndex((x) => String(x.id) === String(task.id));
     if (idx !== -1) {
@@ -316,13 +346,17 @@ export function startEditMode(row, task) {
       }
       saveTasks(tasks);
       const list = row.parentElement;
-      if (list) rerenderList(list, tasks, renderItem);
+      if (list) {
+        rerenderList(list, tasks, renderItem);
+      }
     }
   });
 
   cancelBtn.addEventListener('click', () => {
     const list = row.parentElement;
-    if (list) rerenderList(list, loadTasks(), renderItem);
+    if (list) {
+      rerenderList(list, loadTasks(), renderItem);
+    }
   });
 
   input.addEventListener('keydown', (e) => {
@@ -335,4 +369,3 @@ export function startEditMode(row, task) {
     }
   });
 }
-

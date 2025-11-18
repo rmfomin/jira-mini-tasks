@@ -2,7 +2,9 @@
  * Очистка DOM-элемента: удаление всех детей
  */
 export function empty(el) {
-  if (!el) return;
+  if (!el) {
+    return;
+  }
   while (el.firstChild) {
     el.removeChild(el.firstChild);
   }
@@ -38,7 +40,9 @@ export function el(tag, attrs = {}, children = []) {
  * Автоподгон высоты textarea под содержимое (до 6 строк)
  */
 export function autosizeTextarea(ta) {
-  if (!ta) return;
+  if (!ta) {
+    return;
+  }
   const maxLines = 6;
   const resize = () => {
     const cs = getComputedStyle(ta);
@@ -62,4 +66,3 @@ export function autosizeTextarea(ta) {
   requestAnimationFrame(resize);
   setTimeout(resize, 0);
 }
-

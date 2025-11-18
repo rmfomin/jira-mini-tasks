@@ -101,7 +101,9 @@ export function renderUI(root, initialTasks) {
   // Обработчики
   addBtn.addEventListener('click', () => {
     const val = String(input.value || '').trim();
-    if (!val) return;
+    if (!val) {
+      return;
+    }
     const current = loadTasks();
     const next = [
       ...current,
@@ -121,4 +123,3 @@ export function renderUI(root, initialTasks) {
     }
   });
 }
-
