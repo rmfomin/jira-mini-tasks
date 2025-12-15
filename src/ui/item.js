@@ -94,6 +94,107 @@ export function renderItem(task) {
   linksWrap.style.flexWrap = 'wrap';
   linksWrap.style.height = '30px';
 
+  if (task.dueDate && task.dueDateLabel) {
+    const overdue = isOverdue(task.dueDate);
+    let titleText = '';
+    if (task.dueDateType === 'thisweek' || task.dueDateType === 'nextweek') {
+      if (task.dueDateStart) {
+        titleText = formatDateRange(task.dueDateStart, task.dueDate);
+      }
+    } else if (task.dueDateType !== 'later') {
+      titleText = formatDateDisplay(task.dueDate);
+    }
+    const dateBtnWrap = el('div', { className: 'tm-date-btn-wrap' });
+    dateBtnWrap.style.position = 'relative';
+    dateBtnWrap.style.display = 'inline-block';
+    dateBtnWrap.style.lineHeight = '0';
+    const dateBtn = el('button', { type: 'button', title: titleText });
+    dateBtn.style.padding = '6px 12px';
+    dateBtn.style.height = '100%';
+    dateBtn.style.border = overdue ? '1px solid #c62828' : '1px solid #d0d0d0';
+    dateBtn.style.borderRadius = '8px';
+    dateBtn.style.background = overdue ? '#ffebee' : '#f5f5f5';
+    dateBtn.style.color = overdue ? '#c62828' : '#424242';
+    dateBtn.style.cursor = 'default';
+    dateBtn.style.fontSize = '12px';
+    dateBtn.style.fontWeight = '400';
+    dateBtn.style.lineHeight = '1';
+    dateBtn.style.whiteSpace = 'nowrap';
+    dateBtn.style.display = 'flex';
+    dateBtn.style.alignItems = 'center';
+    dateBtn.style.gap = '6px';
+    dateBtn.style.transition = 'background 0.2s ease';
+    dateBtn.style.position = 'relative';
+    const dateText = overdue ? formatDateDisplay(task.dueDate) : task.dueDateLabel;
+    dateBtn.textContent = `＠ ${dateText}`;
+    const gradientBg = overdue ? '#ffebee' : '#f5f5f5';
+    const gradientHoverBg = overdue ? '#ffcdd2' : '#e8e8e8';
+    const gradient = el('div', { className: 'tm-btn-gradient' });
+    gradient.style.position = 'absolute';
+    gradient.style.top = '0';
+    gradient.style.right = '0';
+    gradient.style.bottom = '0';
+    gradient.style.width = '50px';
+    gradient.style.background = `linear-gradient(to right, ${hexToRgba(gradientBg, 0)} 0%, ${hexToRgba(gradientBg, 1)} 50%)`;
+    gradient.style.pointerEvents = 'none';
+    gradient.style.opacity = '0';
+    gradient.style.transition = 'opacity 0.2s ease';
+    gradient.style.borderRadius = '0 8px 8px 0';
+    const closeBtn = el('button', { type: 'button', text: '×', title: 'Удалить дату' });
+    closeBtn.style.position = 'absolute';
+    closeBtn.style.top = '50%';
+    closeBtn.style.right = '4px';
+    closeBtn.style.transform = 'translateY(-50%)';
+    closeBtn.style.width = '20px';
+    closeBtn.style.height = '20px';
+    closeBtn.style.padding = '0';
+    closeBtn.style.border = 'none';
+    closeBtn.style.background = 'transparent';
+    closeBtn.style.color = overdue ? '#c62828' : '#666';
+    closeBtn.style.fontSize = '20px';
+    closeBtn.style.lineHeight = '1';
+    closeBtn.style.cursor = 'pointer';
+    closeBtn.style.opacity = '0';
+    closeBtn.style.transition = 'opacity 0.2s ease, color 0.1s ease';
+    closeBtn.style.display = 'flex';
+    closeBtn.style.alignItems = 'center';
+    closeBtn.style.justifyContent = 'center';
+    closeBtn.addEventListener('mouseover', () => { closeBtn.style.color = '#d32f2f'; });
+    closeBtn.addEventListener('mouseout', () => { closeBtn.style.color = overdue ? '#c62828' : '#666'; });
+    closeBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const tasks = loadTasks();
+      const idx = tasks.findIndex((x) => String(x.id) === String(task.id));
+      if (idx !== -1) {
+        delete tasks[idx].dueDate;
+        delete tasks[idx].dueDateLabel;
+        delete tasks[idx].dueDateStart;
+        delete tasks[idx].dueDateType;
+        saveTasks(tasks);
+        const list = row.parentElement;
+        if (list) {
+          rerenderList(list, tasks, renderItem);
+        }
+      }
+    });
+    dateBtn.appendChild(gradient);
+    dateBtn.appendChild(closeBtn);
+    dateBtnWrap.appendChild(dateBtn);
+    dateBtnWrap.addEventListener('mouseover', () => {
+      dateBtn.style.background = gradientHoverBg;
+      gradient.style.background = `linear-gradient(to right, ${hexToRgba(gradientHoverBg, 0)} 0%, ${hexToRgba(gradientHoverBg, 1)} 50%)`;
+      gradient.style.opacity = '1';
+      closeBtn.style.opacity = '1';
+    });
+    dateBtnWrap.addEventListener('mouseout', () => {
+      dateBtn.style.background = gradientBg;
+      gradient.style.background = `linear-gradient(to right, ${hexToRgba(gradientBg, 0)} 0%, ${hexToRgba(gradientBg, 1)} 50%)`;
+      gradient.style.opacity = '0';
+      closeBtn.style.opacity = '0';
+    });
+    linksWrap.appendChild(dateBtnWrap);
+  }
+
   if (task.jiraKey && task.jiraSummary) {
     const truncatedSummary = task.jiraSummary.length > 25 ? task.jiraSummary.substring(0, 25) + '…' : task.jiraSummary;
     const jiraBtnWrap = el('div', { className: 'tm-jira-btn-wrap' });
@@ -198,107 +299,6 @@ export function renderItem(task) {
       window.open(task.jiraUrl || `https://jira.theteamsoft.com/browse/${task.jiraKey}`, '_blank', 'noopener,noreferrer');
     });
     linksWrap.appendChild(jiraBtnWrap);
-  }
-
-  if (task.dueDate && task.dueDateLabel) {
-    const overdue = isOverdue(task.dueDate);
-    let titleText = '';
-    if (task.dueDateType === 'thisweek' || task.dueDateType === 'nextweek') {
-      if (task.dueDateStart) {
-        titleText = formatDateRange(task.dueDateStart, task.dueDate);
-      }
-    } else if (task.dueDateType !== 'later') {
-      titleText = formatDateDisplay(task.dueDate);
-    }
-    const dateBtnWrap = el('div', { className: 'tm-date-btn-wrap' });
-    dateBtnWrap.style.position = 'relative';
-    dateBtnWrap.style.display = 'inline-block';
-    dateBtnWrap.style.lineHeight = '0';
-    const dateBtn = el('button', { type: 'button', title: titleText });
-    dateBtn.style.padding = '6px 12px';
-    dateBtn.style.height = '100%';
-    dateBtn.style.border = overdue ? '1px solid #c62828' : '1px solid #d0d0d0';
-    dateBtn.style.borderRadius = '8px';
-    dateBtn.style.background = overdue ? '#ffebee' : '#f5f5f5';
-    dateBtn.style.color = overdue ? '#c62828' : '#424242';
-    dateBtn.style.cursor = 'default';
-    dateBtn.style.fontSize = '12px';
-    dateBtn.style.fontWeight = '400';
-    dateBtn.style.lineHeight = '1';
-    dateBtn.style.whiteSpace = 'nowrap';
-    dateBtn.style.display = 'flex';
-    dateBtn.style.alignItems = 'center';
-    dateBtn.style.gap = '6px';
-    dateBtn.style.transition = 'background 0.2s ease';
-    dateBtn.style.position = 'relative';
-    const dateText = overdue ? formatDateDisplay(task.dueDate) : task.dueDateLabel;
-    dateBtn.textContent = `＠ ${dateText}`;
-    const gradientBg = overdue ? '#ffebee' : '#f5f5f5';
-    const gradientHoverBg = overdue ? '#ffcdd2' : '#e8e8e8';
-    const gradient = el('div', { className: 'tm-btn-gradient' });
-    gradient.style.position = 'absolute';
-    gradient.style.top = '0';
-    gradient.style.right = '0';
-    gradient.style.bottom = '0';
-    gradient.style.width = '50px';
-    gradient.style.background = `linear-gradient(to right, ${hexToRgba(gradientBg, 0)} 0%, ${hexToRgba(gradientBg, 1)} 50%)`;
-    gradient.style.pointerEvents = 'none';
-    gradient.style.opacity = '0';
-    gradient.style.transition = 'opacity 0.2s ease';
-    gradient.style.borderRadius = '0 8px 8px 0';
-    const closeBtn = el('button', { type: 'button', text: '×', title: 'Удалить дату' });
-    closeBtn.style.position = 'absolute';
-    closeBtn.style.top = '50%';
-    closeBtn.style.right = '4px';
-    closeBtn.style.transform = 'translateY(-50%)';
-    closeBtn.style.width = '20px';
-    closeBtn.style.height = '20px';
-    closeBtn.style.padding = '0';
-    closeBtn.style.border = 'none';
-    closeBtn.style.background = 'transparent';
-    closeBtn.style.color = overdue ? '#c62828' : '#666';
-    closeBtn.style.fontSize = '20px';
-    closeBtn.style.lineHeight = '1';
-    closeBtn.style.cursor = 'pointer';
-    closeBtn.style.opacity = '0';
-    closeBtn.style.transition = 'opacity 0.2s ease, color 0.1s ease';
-    closeBtn.style.display = 'flex';
-    closeBtn.style.alignItems = 'center';
-    closeBtn.style.justifyContent = 'center';
-    closeBtn.addEventListener('mouseover', () => { closeBtn.style.color = '#d32f2f'; });
-    closeBtn.addEventListener('mouseout', () => { closeBtn.style.color = overdue ? '#c62828' : '#666'; });
-    closeBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const tasks = loadTasks();
-      const idx = tasks.findIndex((x) => String(x.id) === String(task.id));
-      if (idx !== -1) {
-        delete tasks[idx].dueDate;
-        delete tasks[idx].dueDateLabel;
-        delete tasks[idx].dueDateStart;
-        delete tasks[idx].dueDateType;
-        saveTasks(tasks);
-        const list = row.parentElement;
-        if (list) {
-          rerenderList(list, tasks, renderItem);
-        }
-      }
-    });
-    dateBtn.appendChild(gradient);
-    dateBtn.appendChild(closeBtn);
-    dateBtnWrap.appendChild(dateBtn);
-    dateBtnWrap.addEventListener('mouseover', () => {
-      dateBtn.style.background = gradientHoverBg;
-      gradient.style.background = `linear-gradient(to right, ${hexToRgba(gradientHoverBg, 0)} 0%, ${hexToRgba(gradientHoverBg, 1)} 50%)`;
-      gradient.style.opacity = '1';
-      closeBtn.style.opacity = '1';
-    });
-    dateBtnWrap.addEventListener('mouseout', () => {
-      dateBtn.style.background = gradientBg;
-      gradient.style.background = `linear-gradient(to right, ${hexToRgba(gradientBg, 0)} 0%, ${hexToRgba(gradientBg, 1)} 50%)`;
-      gradient.style.opacity = '0';
-      closeBtn.style.opacity = '0';
-    });
-    linksWrap.appendChild(dateBtnWrap);
   }
 
   if (linksWrap.children.length > 0) {
