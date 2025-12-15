@@ -2,7 +2,7 @@
 // @name         Jira Mini Tasks
 // @description  Adds personal To-Do list linked to JIRA issues
 // @namespace    http://tampermonkey.net/
-// @version      0.3.1
+// @version      0.3.2
 // @author       rs.fomin@rbspayment.ru
 // @match        https://jira.theteamsoft.com/secure/*
 // @grant        GM_getValue

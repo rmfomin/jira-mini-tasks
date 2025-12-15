@@ -34,6 +34,7 @@ export function renderItem(task) {
   text.style.flex = '1';
   text.style.userSelect = 'none';
   text.style.wordBreak = 'break-word';
+  text.style.whiteSpace = 'pre-wrap';
   text.style.cursor = 'text';
   text.title = 'Нажмите, чтобы редактировать';
   if (task.done) {
