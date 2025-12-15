@@ -204,6 +204,12 @@ function handleDragEnd(event) {
       indicator.remove();
 
       const updatedTasks = persistOrderFromDom(listEl);
+      
+      // Деактивируем кнопку сортировки после перемещения
+      if (window.__tmDeactivateSortButton) {
+        window.__tmDeactivateSortButton();
+      }
+      
       const rerenderModule = window.__tmRerenderList;
       const renderItemModule = window.__tmRenderItem;
       if (rerenderModule && renderItemModule) {

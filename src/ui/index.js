@@ -122,6 +122,9 @@ export function renderUI(root, initialTasks) {
   window.__tmRerenderList = rerenderList;
   window.__tmRenderItem = renderItem;
 
+  // Состояние сортировки
+  let isSortedByDate = false;
+
   // Форма
   const form = el('div', { className: 'tm-form' });
   form.style.display = 'flex';
@@ -170,18 +173,54 @@ export function renderUI(root, initialTasks) {
 
   const sortByDateBtn = el('button', { type: 'button', text: '⇅ По дате' });
   sortByDateBtn.style.padding = '6px 12px';
-  sortByDateBtn.style.border = '1px solid #90caf9';
   sortByDateBtn.style.borderRadius = '6px';
-  sortByDateBtn.style.background = '#e3f2fd';
-  sortByDateBtn.style.color = '#1976d2';
   sortByDateBtn.style.cursor = 'pointer';
   sortByDateBtn.style.fontSize = '13px';
   sortByDateBtn.style.fontWeight = '400';
-  sortByDateBtn.style.transition = 'background 0.2s ease';
-  sortByDateBtn.addEventListener('mouseover', () => { sortByDateBtn.style.background = '#bbdefb'; });
-  sortByDateBtn.addEventListener('mouseout', () => { sortByDateBtn.style.background = '#e3f2fd'; });
+  sortByDateBtn.style.transition = 'background 0.2s ease, border-color 0.2s ease, color 0.2s ease';
+
+  // Функции для управления стилями кнопки
+  const applyInactiveStyle = () => {
+    sortByDateBtn.style.border = '1px solid #b0bec5';
+    sortByDateBtn.style.background = '#eceff1';
+    sortByDateBtn.style.color = '#607d8b';
+  };
+
+  const applyActiveStyle = () => {
+    sortByDateBtn.style.border = '1px solid #90caf9';
+    sortByDateBtn.style.background = '#e3f2fd';
+    sortByDateBtn.style.color = '#1976d2';
+  };
+
+  const applyHoverStyle = () => {
+    if (isSortedByDate) {
+      sortByDateBtn.style.background = '#bbdefb';
+    } else {
+      sortByDateBtn.style.background = '#cfd8dc';
+    }
+  };
+
+  const applyDefaultStyle = () => {
+    if (isSortedByDate) {
+      applyActiveStyle();
+    } else {
+      applyInactiveStyle();
+    }
+  };
+
+  // Изначально неактивная
+  applyInactiveStyle();
+
+  sortByDateBtn.addEventListener('mouseover', applyHoverStyle);
+  sortByDateBtn.addEventListener('mouseout', applyDefaultStyle);
 
   sortBar.appendChild(sortByDateBtn);
+
+  // Глобальная функция для деактивации кнопки (вызывается при DnD)
+  window.__tmDeactivateSortButton = () => {
+    isSortedByDate = false;
+    applyInactiveStyle();
+  };
 
   // Список
   const list = el('div', { id: 'tm-list' });
@@ -251,6 +290,10 @@ export function renderUI(root, initialTasks) {
     const sorted = [...tasksWithDate, ...tasksWithoutDate];
     saveTasks(sorted);
     rerenderList(list, sorted, renderItem);
+
+    // Активируем кнопку
+    isSortedByDate = true;
+    applyActiveStyle();
   });
 
   // Обработчики
