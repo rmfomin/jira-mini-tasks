@@ -84,21 +84,48 @@ export function renderItem(task) {
   menuWrap.appendChild(menu);
   row.appendChild(menuWrap);
 
-  if (task.jiraUrl || task.jiraText) {
+  if (task.jiraKey && task.jiraSummary) {
     const jiraView = el('div', { className: 'tm-jira-link-wrap' });
     jiraView.style.flexBasis = '100%';
     jiraView.style.marginTop = '4px';
     jiraView.style.overflow = 'hidden';
-    const linkText = task.jiraText || task.jiraUrl || '';
-    const jiraA = el('a', { href: task.jiraUrl || '#', text: linkText, target: '_blank', rel: 'noopener noreferrer' });
-    jiraA.style.color = '#3572b0';
-    jiraA.style.textDecoration = 'underline';
-    jiraA.style.display = 'inline-block';
-    jiraA.style.maxWidth = '100%';
-    jiraA.style.whiteSpace = 'nowrap';
-    jiraA.style.overflow = 'hidden';
-    jiraA.style.textOverflow = 'ellipsis';
-    jiraView.appendChild(jiraA);
+    const truncatedSummary = task.jiraSummary.length > 25 ? task.jiraSummary.substring(0, 25) + '…' : task.jiraSummary;
+    const jiraBtn = el('button', { type: 'button', title: task.jiraSummary });
+    jiraBtn.style.padding = '6px 12px';
+    jiraBtn.style.border = '1px solid #d0d0d0';
+    jiraBtn.style.borderRadius = '8px';
+    jiraBtn.style.background = '#f5f5f5';
+    jiraBtn.style.color = '#424242';
+    jiraBtn.style.cursor = 'pointer';
+    jiraBtn.style.fontSize = '13px';
+    jiraBtn.style.fontWeight = '400';
+    jiraBtn.style.maxWidth = '100%';
+    jiraBtn.style.whiteSpace = 'nowrap';
+    jiraBtn.style.overflow = 'hidden';
+    jiraBtn.style.textOverflow = 'ellipsis';
+    jiraBtn.style.transition = 'background 0.2s ease';
+    jiraBtn.style.textAlign = 'left';
+    jiraBtn.style.display = 'flex';
+    jiraBtn.style.alignItems = 'center';
+    jiraBtn.style.gap = '6px';
+    const jiraIcon = el('img');
+    jiraIcon.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAALqSURBVHgB7ZdNT9RAGMefaTvtwbe6HDQhJnsBPG5i/AB8A4kfYCGe8KQxngwwVeJJIwcP3mg8G/UbrN9AjwYkbowElQjIKtB2puMzLWtg6cu065F/0nSYl/5/M8/MMyzAqYZQcz5YGF+UCzCEDKipc7c+twkAwyIbBqIewM33bcMAn9p2v6Y2RHUANAcp/PONkcGWWhCVANzZLzcIxD4uPViOndWlMoQ2wJnpldZ+r7dsmGZZ10oQWgDu7R8ty7Y7lDouvsGwLAj29+F/QJQCjN7fbjmO0UFjNKdgUXwQItjbKxvKJhblnbJOhQBjTLao43TQ1LWoDaZ1CIDvvV4PeBgWDQcJ8Gz8sWxDHYCrTDaJCW/Q2FXHjSYzp6DK6q32wub6OpQqBr8Iwsgzjyl0gEBTGZk0nTn9twp28rcQwpMxzMAQECTXXELzaD2aAY/CZNl5GEHEQ2/r+ShTbWMP5TQxYBnKOCRMfpoj73IB8syPQSCAOAi8r08vsqNtmhA7ksDk6gPyoV9xLARF5kpmGo4T5kqr88TXCIdLJHSaTLqZADqyLEvmtQkeXZBSgoayAYwIJjEo3ZLBmUlm9N52O4rCJcE5FEAkIegy0s0E+IgNdSDc2Y12yEOfR1G6R7IhTsRfiWR9vWwzHgVZX1npmjb11VGltoPH08J9Yqf5Ast9CyFham2OvB38AMn7si7E1vdv8OfXbpKeVbIyD5OVyhfpGyEMMoMz97PG525C3XA0Ll0GQggIzBERhkCEUZInhAoHPrHgueaFAH0IjOQUFneK+p11XYhUglKJiqf7QJlH4cHdNWb7RWNLj6HaNGrzFEGcbzSSGYvENF0JHgTexpORJSiRVh4og0j+ScEw8MPlRwhv68UVBhrSTkQ6KyFjgasQeAcvJxhoqlImVBB4oUwN1sd4R6hHgvTiV9cYVFDlVKxus8Gc/3tHLYr04PV1BhVV63fB4MWz+3OzlvnQUlfw+CPJ4FRD6C9T03iJQ2mrcgAAAABJRU5ErkJggg==';
+    jiraIcon.alt = 'Jira';
+    jiraIcon.style.width = '16px';
+    jiraIcon.style.height = '16px';
+    jiraIcon.style.flexShrink = '0';
+    const textSpan = el('span', { text: `${task.jiraKey} | ${truncatedSummary}` });
+    textSpan.style.overflow = 'hidden';
+    textSpan.style.textOverflow = 'ellipsis';
+    textSpan.style.whiteSpace = 'nowrap';
+    jiraBtn.appendChild(jiraIcon);
+    jiraBtn.appendChild(textSpan);
+    jiraBtn.addEventListener('mouseover', () => { jiraBtn.style.background = '#e8e8e8'; });
+    jiraBtn.addEventListener('mouseout', () => { jiraBtn.style.background = '#f5f5f5'; });
+    jiraBtn.addEventListener('click', () => {
+      window.open(task.jiraUrl || `https://jira.theteamsoft.com/browse/${task.jiraKey}`, '_blank', 'noopener,noreferrer');
+    });
+    jiraView.appendChild(jiraBtn);
     row.appendChild(jiraView);
   }
 
@@ -143,6 +170,39 @@ export function renderItem(task) {
   });
 
   return row;
+}
+
+/**
+ * Извлечь Jira issue key из текста
+ */
+function extractJiraKey(text) {
+  const match = text.match(/\b([A-Z]+-\d+)\b/);
+  return match ? match[1] : null;
+}
+
+/**
+ * Загрузить данные задачи из Jira API
+ */
+async function fetchJiraIssue(issueKey) {
+  try {
+    const response = await fetch(`https://jira.theteamsoft.com/rest/api/2/issue/${issueKey}?fields=summary`, {
+      method: 'GET',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    const data = await response.json();
+    if (data.errorMessages || data.errors) {
+      return { error: true };
+    }
+    return {
+      key: data.key,
+      summary: data.fields.summary,
+      url: `https://jira.theteamsoft.com/browse/${data.key}`,
+    };
+  } catch (err) {
+    console.error('tpm: Ошибка загрузки Jira issue:', err);
+    return { error: true };
+  }
 }
 
 /**
@@ -200,63 +260,8 @@ export function startEditMode(row, task) {
   actions.style.marginTop = '6px';
   actions.style.flexBasis = '100%';
 
-  let jiraEnabled = !!(task.jiraUrl);
-  let jiraViewRef = null;
-  const jiraBtn = el('button', { type: 'button' });
-  jiraBtn.style.padding = '4px 8px';
-  jiraBtn.style.border = '1px solid #bdbdbd';
-  jiraBtn.style.borderRadius = '6px';
-  jiraBtn.style.background = '#f3f3f3';
-  jiraBtn.style.cursor = 'pointer';
-  const setJiraBtnText = () => { jiraBtn.textContent = jiraEnabled ? '− Jira' : '+ Jira'; };
-  setJiraBtnText();
-
-  const jiraWrap = el('div', { className: 'tm-jira-edit' });
-  jiraWrap.style.display = 'none';
-  jiraWrap.style.flexBasis = '94%';
-  jiraWrap.style.marginTop = '6px';
-  const jiraInput = el('input', { type: 'text', placeholder: '[[UI-5320] Название](https://jira.theteamsoft.com/browse/UI-5320)' });
-  jiraInput.style.width = '100%';
-  jiraInput.style.padding = '6px 8px';
-  jiraInput.style.border = '1px solid #dcdcdc';
-  jiraInput.style.borderRadius = '6px';
-  jiraWrap.appendChild(jiraInput);
-
-  const toMarkdown = (text, url) => (text && url ? `[${text}](${url})` : (url ? url : ''));
-  const fromMarkdown = (src) => {
-    if (!src) {
-      return null;
-    }
-    const m = src.match(/^\s*\[(.+?)\]\((https?:\/\/[^)\s]+)\)\s*$/);
-    if (m) return { text: m[1], url: m[2] };
-    const urlMatch = src.match(/https?:\/\/[^\s)]+/);
-    if (urlMatch) return { text: src.replace(urlMatch[0], '').trim() || urlMatch[0], url: urlMatch[0] };
-    return null;
-  };
-
-  jiraBtn.addEventListener('click', () => {
-    jiraEnabled = !jiraEnabled;
-    setJiraBtnText();
-    if (jiraEnabled) {
-      jiraWrap.style.display = 'block';
-      if (!jiraInput.value) {
-        jiraInput.value = toMarkdown(task.jiraText || '', task.jiraUrl || '');
-      }
-      jiraInput.focus();
-      if (jiraViewRef) {
-        jiraViewRef.style.display = 'block';
-      }
-    } else {
-      jiraWrap.style.display = 'none';
-      if (jiraViewRef) {
-        jiraViewRef.style.display = 'none';
-      }
-    }
-  });
-
   actions.appendChild(saveBtn);
   actions.appendChild(cancelBtn);
-  actions.appendChild(jiraBtn);
   row.appendChild(actions);
   autosizeTextarea(input);
   const hintEdit = el('div', { className: 'tm-hint-edit', text: 'Enter — сохранить, Shift+Enter — новая строка, Esc — отменить' });
@@ -265,35 +270,43 @@ export function startEditMode(row, task) {
   hintEdit.style.flexBasis = '100%';
   hintEdit.style.marginTop = '2px';
   row.appendChild(hintEdit);
-  row.appendChild(jiraWrap);
-  jiraViewRef = row.querySelector('.tm-jira-link-wrap') || null;
 
   input.focus();
   input.select();
 
-  saveBtn.addEventListener('click', () => {
+  saveBtn.addEventListener('click', async () => {
     const val = String(input.value || '').trim();
     if (val.length === 0) {
       return;
     }
+    saveBtn.disabled = true;
+    saveBtn.textContent = '⏳';
+    input.style.border = '1px solid #dcdcdc';
+    const jiraKey = extractJiraKey(val);
+    let jiraData = null;
+    let taskText = val;
+    if (jiraKey) {
+      jiraData = await fetchJiraIssue(jiraKey);
+      if (jiraData.error) {
+        input.style.border = '2px solid #d32f2f';
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Сохранить';
+        return;
+      }
+      taskText = val.replace(/\b[A-Z]+-\d+\b/, '').trim();
+    }
     const tasks = loadTasks();
     const idx = tasks.findIndex((x) => String(x.id) === String(task.id));
     if (idx !== -1) {
-      tasks[idx].text = val;
-      if (!jiraEnabled) {
-        delete tasks[idx].jiraUrl;
-        delete tasks[idx].jiraText;
+      tasks[idx].text = taskText;
+      if (jiraData && !jiraData.error) {
+        tasks[idx].jiraKey = jiraData.key;
+        tasks[idx].jiraSummary = jiraData.summary;
+        tasks[idx].jiraUrl = jiraData.url;
       } else {
-        if (jiraWrap.style.display !== 'none' && jiraInput.value.trim()) {
-          const parsed = fromMarkdown(jiraInput.value.trim());
-          if (parsed) {
-            tasks[idx].jiraUrl = parsed.url;
-            tasks[idx].jiraText = parsed.text;
-          }
-        } else if (task.jiraUrl) {
-          tasks[idx].jiraUrl = task.jiraUrl;
-          tasks[idx].jiraText = task.jiraText;
-        }
+        delete tasks[idx].jiraKey;
+        delete tasks[idx].jiraSummary;
+        delete tasks[idx].jiraUrl;
       }
       saveTasks(tasks);
       const list = row.parentElement;

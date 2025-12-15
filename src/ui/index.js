@@ -5,6 +5,39 @@ import { rerenderList } from './rerender.js';
 import { renderItem } from './item.js';
 
 /**
+ * Извлечь Jira issue key из текста
+ */
+function extractJiraKey(text) {
+  const match = text.match(/\b([A-Z]+-\d+)\b/);
+  return match ? match[1] : null;
+}
+
+/**
+ * Загрузить данные задачи из Jira API
+ */
+async function fetchJiraIssue(issueKey) {
+  try {
+    const response = await fetch(`https://jira.theteamsoft.com/rest/api/2/issue/${issueKey}?fields=summary`, {
+      method: 'GET',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    const data = await response.json();
+    if (data.errorMessages || data.errors) {
+      return { error: true };
+    }
+    return {
+      key: data.key,
+      summary: data.fields.summary,
+      url: `https://jira.theteamsoft.com/browse/${data.key}`,
+    };
+  } catch (err) {
+    console.error('tpm: Ошибка загрузки Jira issue:', err);
+    return { error: true };
+  }
+}
+
+/**
  * Рендер UI todo-листа
  */
 export function renderUI(root, initialTasks) {
@@ -102,19 +135,40 @@ export function renderUI(root, initialTasks) {
   root.appendChild(list);
 
   // Обработчики
-  addBtn.addEventListener('click', () => {
+  addBtn.addEventListener('click', async () => {
     const val = String(input.value || '').trim();
     if (!val) {
       return;
     }
+    addBtn.disabled = true;
+    addBtn.textContent = '⏳';
+    input.style.border = '1px solid #dcdcdc';
+    const jiraKey = extractJiraKey(val);
+    let jiraData = null;
+    let taskText = val;
+    if (jiraKey) {
+      jiraData = await fetchJiraIssue(jiraKey);
+      if (jiraData.error) {
+        input.style.border = '2px solid #d32f2f';
+        addBtn.disabled = false;
+        addBtn.textContent = '➤';
+        return;
+      }
+      taskText = val.replace(/\b[A-Z]+-\d+\b/, '').trim();
+    }
     const current = loadTasks();
-    const next = [
-      ...current,
-      { id: Date.now(), text: val, done: false, createdAt: Date.now() },
-    ];
+    const newTask = { id: Date.now(), text: taskText, done: false, createdAt: Date.now() };
+    if (jiraData && !jiraData.error) {
+      newTask.jiraKey = jiraData.key;
+      newTask.jiraSummary = jiraData.summary;
+      newTask.jiraUrl = jiraData.url;
+    }
+    const next = [...current, newTask];
     saveTasks(next);
     input.value = '';
     input.dispatchEvent(new Event('input'));
+    addBtn.disabled = false;
+    addBtn.textContent = '➤';
     rerenderList(list, next, renderItem);
     input.focus();
   });
