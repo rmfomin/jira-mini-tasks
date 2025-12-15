@@ -1,6 +1,6 @@
 {
   "name": "jira-mini-tasks",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Tampermonkey userscript: personal To-Do list for JIRA dashboard",
   "license": "UNLICENSED",
   "private": true,

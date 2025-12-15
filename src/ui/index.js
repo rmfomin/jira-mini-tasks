@@ -8,6 +8,9 @@ import { renderItem } from './item.js';
  * Рендер UI todo-листа
  */
 export function renderUI(root, initialTasks) {
+  window.__tmRerenderList = rerenderList;
+  window.__tmRenderItem = renderItem;
+
   // Форма
   const form = el('div', { className: 'tm-form' });
   form.style.display = 'flex';

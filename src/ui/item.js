@@ -1,6 +1,6 @@
 import { el, autosizeTextarea } from '../utils/dom.js';
 import { loadTasks, saveTasks } from '../storage/index.js';
-import { persistOrderFromDom, setDraggingId, getDraggingId } from '../dnd/index.js';
+import { startDrag } from '../dnd/index.js';
 import { rerenderList } from './rerender.js';
 
 /**
@@ -137,58 +137,8 @@ export function renderItem(task) {
   });
 
   // DnD
-  drag.addEventListener('mousedown', () => {
-    if (row.dataset && row.dataset.editing === '1') {
-      row.draggable = false;
-      return;
-    }
-    row.draggable = true;
-  });
-  row.addEventListener('dragstart', (e) => {
-    if (!row.draggable) {
-      e.preventDefault();
-      return;
-    }
-    setDraggingId(row.dataset.id || null);
-    row.style.opacity = '0.6';
-    if (e.dataTransfer) {
-      e.dataTransfer.effectAllowed = 'move';
-      try { e.dataTransfer.setData('text/plain', getDraggingId() || ''); } catch {}
-    }
-  });
-  row.addEventListener('dragend', () => {
-    row.style.opacity = '1';
-    row.draggable = false;
-    setDraggingId(null);
-  });
-  row.addEventListener('dragover', (e) => {
-    if (!getDraggingId()) {
-      return;
-    }
-    e.preventDefault();
-    const list = row.parentElement;
-    if (!list || !(list instanceof Node)) {
-      return;
-    }
-    const draggingEl = Array.from(list.children).find((n) => n.dataset && n.dataset.id === getDraggingId());
-    if (!draggingEl || draggingEl === row) {
-      return;
-    }
-    const rect = row.getBoundingClientRect();
-    const before = e.clientY < rect.top + rect.height / 2;
-    if (before) {
-      list.insertBefore(draggingEl, row);
-    } else {
-      list.insertBefore(draggingEl, row.nextSibling);
-    }
-  });
-  row.addEventListener('drop', (e) => {
-    e.preventDefault();
-    const list = row.parentElement;
-    if (list) {
-      const next = persistOrderFromDom(list);
-      rerenderList(list, next, renderItem);
-    }
+  drag.addEventListener('mousedown', (e) => {
+    startDrag(row, e);
   });
 
   return row;
