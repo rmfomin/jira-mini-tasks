@@ -162,6 +162,27 @@ export function renderUI(root, initialTasks) {
   form.appendChild(hintAdd);
   autosizeTextarea(input);
 
+  // Панель сортировки
+  const sortBar = el('div', { className: 'tm-sort-bar' });
+  sortBar.style.display = 'flex';
+  sortBar.style.gap = '8px';
+  sortBar.style.marginBottom = '10px';
+
+  const sortByDateBtn = el('button', { type: 'button', text: '⇅ По дате' });
+  sortByDateBtn.style.padding = '6px 12px';
+  sortByDateBtn.style.border = '1px solid #90caf9';
+  sortByDateBtn.style.borderRadius = '6px';
+  sortByDateBtn.style.background = '#e3f2fd';
+  sortByDateBtn.style.color = '#1976d2';
+  sortByDateBtn.style.cursor = 'pointer';
+  sortByDateBtn.style.fontSize = '13px';
+  sortByDateBtn.style.fontWeight = '400';
+  sortByDateBtn.style.transition = 'background 0.2s ease';
+  sortByDateBtn.addEventListener('mouseover', () => { sortByDateBtn.style.background = '#bbdefb'; });
+  sortByDateBtn.addEventListener('mouseout', () => { sortByDateBtn.style.background = '#e3f2fd'; });
+
+  sortBar.appendChild(sortByDateBtn);
+
   // Список
   const list = el('div', { id: 'tm-list' });
   list.style.display = 'flex';
@@ -210,7 +231,27 @@ export function renderUI(root, initialTasks) {
   // Вставка в root
   // root.appendChild(apiBar);
   root.appendChild(form);
+  root.appendChild(sortBar);
   root.appendChild(list);
+
+  // Обработчик сортировки по дате
+  sortByDateBtn.addEventListener('click', () => {
+    const tasks = loadTasks();
+    const tasksWithDate = tasks.filter((t) => t.dueDate);
+    const tasksWithoutDate = tasks.filter((t) => !t.dueDate);
+
+    // Сортируем задачи с датой по возрастанию (сегодня первыми)
+    tasksWithDate.sort((a, b) => {
+      const dateA = new Date(a.dueDate);
+      const dateB = new Date(b.dueDate);
+      return dateA - dateB;
+    });
+
+    // Объединяем: сначала с датой, потом без даты
+    const sorted = [...tasksWithDate, ...tasksWithoutDate];
+    saveTasks(sorted);
+    rerenderList(list, sorted, renderItem);
+  });
 
   // Обработчики
   addBtn.addEventListener('click', async () => {
