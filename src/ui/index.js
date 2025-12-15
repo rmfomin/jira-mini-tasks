@@ -43,7 +43,7 @@ export function renderUI(root, initialTasks) {
 
   form.appendChild(input);
   form.appendChild(addBtn);
-  const hintAdd = el('div', { className: 'tm-hint-add', text: 'Ctrl/Cmd+Enter — добавить' });
+  const hintAdd = el('div', { className: 'tm-hint-add', text: 'Enter — добавить, Shift+Enter — новая строка' });
   hintAdd.style.fontSize = '12px';
   hintAdd.style.color = '#777';
   hintAdd.style.flexBasis = '100%';
@@ -120,7 +120,7 @@ export function renderUI(root, initialTasks) {
   });
 
   input.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+    if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       addBtn.click();
     }

@@ -259,7 +259,7 @@ export function startEditMode(row, task) {
   actions.appendChild(jiraBtn);
   row.appendChild(actions);
   autosizeTextarea(input);
-  const hintEdit = el('div', { className: 'tm-hint-edit', text: 'Ctrl/Cmd+Enter — сохранить, Esc — отменить' });
+  const hintEdit = el('div', { className: 'tm-hint-edit', text: 'Enter — сохранить, Shift+Enter — новая строка, Esc — отменить' });
   hintEdit.style.fontSize = '12px';
   hintEdit.style.color = '#777';
   hintEdit.style.flexBasis = '100%';
@@ -311,7 +311,7 @@ export function startEditMode(row, task) {
   });
 
   input.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+    if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       saveBtn.click();
     } else if (e.key === 'Escape') {
