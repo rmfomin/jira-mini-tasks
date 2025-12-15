@@ -48,6 +48,7 @@ export function renderItem(task) {
   menuWrap.style.position = 'relative';
   const menuBtn = el('button', { type: 'button', title: 'Меню', 'aria-label': 'Меню', text: '☰' });
   menuBtn.style.padding = '4px 8px';
+  menuBtn.style.marginLeft = '14px';
   menuBtn.style.border = '1px solid #bdbdbd';
   menuBtn.style.borderRadius = '6px';
   menuBtn.style.background = '#f3f3f3';
