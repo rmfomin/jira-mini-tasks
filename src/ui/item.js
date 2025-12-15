@@ -84,11 +84,14 @@ export function renderItem(task) {
   menuWrap.appendChild(menu);
   row.appendChild(menuWrap);
 
+  const linksWrap = el('div', { className: 'tm-links-wrap' });
+  linksWrap.style.flexBasis = '100%';
+  linksWrap.style.marginTop = '4px';
+  linksWrap.style.display = 'flex';
+  linksWrap.style.gap = '8px';
+  linksWrap.style.flexWrap = 'wrap';
+
   if (task.jiraKey && task.jiraSummary) {
-    const jiraView = el('div', { className: 'tm-jira-link-wrap' });
-    jiraView.style.flexBasis = '100%';
-    jiraView.style.marginTop = '4px';
-    jiraView.style.overflow = 'hidden';
     const truncatedSummary = task.jiraSummary.length > 25 ? task.jiraSummary.substring(0, 25) + '…' : task.jiraSummary;
     const jiraBtn = el('button', { type: 'button', title: task.jiraSummary });
     jiraBtn.style.padding = '6px 12px';
@@ -99,7 +102,6 @@ export function renderItem(task) {
     jiraBtn.style.cursor = 'pointer';
     jiraBtn.style.fontSize = '13px';
     jiraBtn.style.fontWeight = '400';
-    jiraBtn.style.maxWidth = '100%';
     jiraBtn.style.whiteSpace = 'nowrap';
     jiraBtn.style.overflow = 'hidden';
     jiraBtn.style.textOverflow = 'ellipsis';
@@ -125,8 +127,40 @@ export function renderItem(task) {
     jiraBtn.addEventListener('click', () => {
       window.open(task.jiraUrl || `https://jira.theteamsoft.com/browse/${task.jiraKey}`, '_blank', 'noopener,noreferrer');
     });
-    jiraView.appendChild(jiraBtn);
-    row.appendChild(jiraView);
+    linksWrap.appendChild(jiraBtn);
+  }
+
+  if (task.dueDate && task.dueDateLabel) {
+    const overdue = isOverdue(task.dueDate);
+    let titleText = '';
+    if (task.dueDateType === 'thisweek' || task.dueDateType === 'nextweek') {
+      if (task.dueDateStart) {
+        titleText = formatDateRange(task.dueDateStart, task.dueDate);
+      }
+    } else if (task.dueDateType !== 'later') {
+      titleText = formatDateDisplay(task.dueDate);
+    }
+    const dateBtn = el('button', { type: 'button', title: titleText });
+    dateBtn.style.padding = '6px 12px';
+    dateBtn.style.border = overdue ? '1px solid #c62828' : '1px solid #d0d0d0';
+    dateBtn.style.borderRadius = '8px';
+    dateBtn.style.background = overdue ? '#ffebee' : '#f5f5f5';
+    dateBtn.style.color = overdue ? '#c62828' : '#424242';
+    dateBtn.style.cursor = 'default';
+    dateBtn.style.fontSize = '13px';
+    dateBtn.style.fontWeight = '400';
+    dateBtn.style.whiteSpace = 'nowrap';
+    dateBtn.style.display = 'flex';
+    dateBtn.style.alignItems = 'center';
+    dateBtn.style.gap = '6px';
+    dateBtn.style.transition = 'opacity 0.1s ease';
+    const dateText = overdue ? formatDateDisplay(task.dueDate) : task.dueDateLabel;
+    dateBtn.textContent = `＠ ${dateText}`;
+    linksWrap.appendChild(dateBtn);
+  }
+
+  if (linksWrap.children.length > 0) {
+    row.appendChild(linksWrap);
   }
 
   checkbox.addEventListener('change', () => {
@@ -178,6 +212,117 @@ export function renderItem(task) {
 function extractJiraKey(text) {
   const match = text.match(/\b([A-Z]+-\d+)\b/);
   return match ? match[1] : null;
+}
+
+/**
+ * Извлечь дату из текста
+ */
+function extractDueDate(text) {
+  const match = text.match(/@([a-zа-яё]+)/i);
+  if (!match) {
+    return null;
+  }
+  const keyword = match[1].toLowerCase();
+  const dateMap = {
+    today: 'today',
+    tomorrow: 'tomorrow',
+    thisweek: 'thisweek',
+    nextweek: 'nextweek',
+    later: 'later',
+    forgotten: 'forgotten',
+    сегодня: 'today',
+    завтра: 'tomorrow',
+    этанеделя: 'thisweek',
+    следнеделя: 'nextweek',
+    позже: 'later',
+    позднее: 'later',
+    забыто: 'forgotten',
+  };
+  const normalizedKey = dateMap[keyword];
+  if (!normalizedKey) {
+    return null;
+  }
+  return parseDateKeyword(normalizedKey);
+}
+
+/**
+ * Преобразовать ключевое слово в дату
+ */
+function parseDateKeyword(keyword) {
+  const now = new Date();
+  const labels = {
+    today: 'Сегодня',
+    tomorrow: 'Завтра',
+    thisweek: 'Эта неделя',
+    nextweek: 'След.неделя',
+    later: 'Позже',
+    forgotten: 'Забыто',
+  };
+  let targetDate = new Date(now);
+  let startDate = null;
+  switch (keyword) {
+    case 'today':
+      break;
+    case 'tomorrow':
+      targetDate.setDate(now.getDate() + 1);
+      break;
+    case 'thisweek':
+      startDate = new Date(now);
+      targetDate.setDate(now.getDate() + (7 - now.getDay()));
+      break;
+    case 'nextweek':
+      startDate = new Date(now);
+      startDate.setDate(now.getDate() + (7 - now.getDay()) + 1);
+      targetDate.setDate(now.getDate() + (14 - now.getDay()));
+      break;
+    case 'later':
+      targetDate.setDate(now.getDate() + 30);
+      break;
+    case 'forgotten':
+      targetDate.setDate(now.getDate() - 365);
+      break;
+    default:
+      return null;
+  }
+  return {
+    date: targetDate.toISOString().split('T')[0],
+    label: labels[keyword],
+    startDate: startDate ? startDate.toISOString().split('T')[0] : null,
+    type: keyword,
+  };
+}
+
+/**
+ * Форматировать дату для отображения
+ */
+function formatDateDisplay(dateStr) {
+  const date = new Date(dateStr);
+  const months = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
+  return `${date.getDate()} ${months[date.getMonth()]}`;
+}
+
+/**
+ * Форматировать интервал дат
+ */
+function formatDateRange(startDateStr, endDateStr) {
+  const startDate = new Date(startDateStr);
+  const endDate = new Date(endDateStr);
+  const monthsShort = ['янв', 'фев', 'мар', 'апр', 'мая', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
+  if (startDate.getMonth() === endDate.getMonth()) {
+    return `${startDate.getDate()} - ${endDate.getDate()} ${monthsShort[endDate.getMonth()]}`;
+  }
+  return `${startDate.getDate()} ${monthsShort[startDate.getMonth()]} - ${endDate.getDate()} ${monthsShort[endDate.getMonth()]}`;
+}
+
+/**
+ * Проверить, просрочена ли дата
+ */
+function isOverdue(dateStr) {
+  const now = new Date();
+  const due = new Date(dateStr);
+  now.setHours(0, 0, 0, 0);
+  due.setHours(0, 0, 0, 0);
+  return due < now;
 }
 
 /**
@@ -283,6 +428,7 @@ export function startEditMode(row, task) {
     saveBtn.textContent = '⏳';
     input.style.border = '1px solid #dcdcdc';
     const jiraKey = extractJiraKey(val);
+    const dueDateData = extractDueDate(val);
     let jiraData = null;
     let taskText = val;
     if (jiraKey) {
@@ -293,20 +439,31 @@ export function startEditMode(row, task) {
         saveBtn.textContent = 'Сохранить';
         return;
       }
-      taskText = val.replace(/\b[A-Z]+-\d+\b/, '').trim();
+      taskText = taskText.replace(/\b[A-Z]+-\d+\b/, '').trim();
+    }
+    if (dueDateData) {
+      taskText = taskText.replace(/@[a-zа-яё]+/i, '').trim();
     }
     const tasks = loadTasks();
     const idx = tasks.findIndex((x) => String(x.id) === String(task.id));
     if (idx !== -1) {
       tasks[idx].text = taskText;
-      if (jiraData && !jiraData.error) {
-        tasks[idx].jiraKey = jiraData.key;
-        tasks[idx].jiraSummary = jiraData.summary;
-        tasks[idx].jiraUrl = jiraData.url;
-      } else {
+      if (jiraKey) {
+        if (jiraData && !jiraData.error) {
+          tasks[idx].jiraKey = jiraData.key;
+          tasks[idx].jiraSummary = jiraData.summary;
+          tasks[idx].jiraUrl = jiraData.url;
+        }
+      } else if (!task.jiraKey) {
         delete tasks[idx].jiraKey;
         delete tasks[idx].jiraSummary;
         delete tasks[idx].jiraUrl;
+      }
+      if (dueDateData) {
+        tasks[idx].dueDate = dueDateData.date;
+        tasks[idx].dueDateLabel = dueDateData.label;
+        tasks[idx].dueDateStart = dueDateData.startDate;
+        tasks[idx].dueDateType = dueDateData.type;
       }
       saveTasks(tasks);
       const list = row.parentElement;
