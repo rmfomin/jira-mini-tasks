@@ -30,7 +30,6 @@ async function buildOnce() {
     format: 'iife',
     platform: 'browser',
     banner: { js: header },
-    sourcemap: 'inline',
     logLevel: 'info'
   });
 }
@@ -48,7 +47,6 @@ if (!watch) {
     format: 'iife',
     platform: 'browser',
     banner: { js: header },
-    sourcemap: 'inline',
     logLevel: 'info'
   });
   await ctx.watch();
