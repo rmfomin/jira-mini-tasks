@@ -6,7 +6,10 @@ import { initJiraPageIntegration } from './jira-page-integration.js';
 // Определяем, на какой странице мы находимся
 const currentPath = window.location.pathname;
 
-if (currentPath.startsWith('/browse/')) {
+// Проверяем, что это страница просмотра конкретной задачи (например, /browse/UI-5788)
+const isIssuePage = /^\/browse\/[A-Z]+-\d+/.test(currentPath);
+
+if (isIssuePage) {
   // Страница просмотра задачи
   initJiraPageIntegration();
 } else if (currentPath.startsWith('/secure/')) {
