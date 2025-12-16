@@ -80,6 +80,30 @@ Add a date using the `@` symbol:
 3. Open Tampermonkey Dashboard and import the file
 4. Done! Open [Jira Dashboard](https://jira.theteamsoft.com/secure/)
 
+## ⚙️ Configuration
+
+Before using the plugin, you need to create a widget in Jira Dashboard:
+
+1. Open [Jira Dashboard](https://jira.theteamsoft.com/secure/Dashboard.jspa)
+2. Click "•••" menu → "Add Gadget"
+3. Add any gadget (e.g., "Filter Results") to your dashboard
+4. Right-click on the created gadget and select "Inspect Element"
+5. Find the gadget container element with an ID like `gadget-20269`
+6. Copy the number from the ID (e.g., `20269`)
+7. Open `src/constants.js` and replace the value:
+
+```javascript
+export const numberId = "20269"; // Replace with your widget ID
+```
+
+8. Rebuild the project:
+
+```bash
+npm run build
+```
+
+9. Reload Tampermonkey script and refresh Jira Dashboard
+
 ## 🛠️ Development
 
 ### Building the project
