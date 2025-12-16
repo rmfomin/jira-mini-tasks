@@ -493,6 +493,21 @@ async function fetchJiraIssue(issueKey) {
  * Переход в режим редактирования
  */
 export function startEditMode(row, task) {
+  // Отменяем редактирование других задач, если они есть
+  const list = row.parentElement;
+  if (list) {
+    const editingItems = list.querySelectorAll('[data-editing="1"]');
+    if (editingItems.length > 0) {
+      const tasks = loadTasks();
+      rerenderList(list, tasks, renderItem);
+      // После перерендера находим новый row по task.id
+      const newRow = list.querySelector(`[data-id="${task.id}"]`);
+      if (newRow) {
+        row = newRow;
+      }
+    }
+  }
+
   const currentTextEl = row.querySelector('.tm-item-text');
   if (!currentTextEl) {
     return;
