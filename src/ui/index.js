@@ -116,6 +116,15 @@ async function fetchJiraIssue(issueKey) {
 }
 
 /**
+ * Сортировка задач: выполненные задачи в конец
+ */
+function sortTasksWithDoneAtEnd(tasks) {
+  const notDone = tasks.filter((t) => !t.done);
+  const done = tasks.filter((t) => t.done);
+  return [...notDone, ...done];
+}
+
+/**
  * Рендер UI todo-листа
  */
 export function renderUI(root, initialTasks) {
@@ -227,7 +236,8 @@ export function renderUI(root, initialTasks) {
   list.style.display = 'flex';
   list.style.flexDirection = 'column';
   list.style.gap = '6px';
-  initialTasks.forEach((t) => list.appendChild(renderItem(t)));
+  const sortedInitialTasks = sortTasksWithDoneAtEnd(initialTasks);
+  sortedInitialTasks.forEach((t) => list.appendChild(renderItem(t)));
 
   // Панель API
   // const apiBar = el('div', { className: 'tm-api-bar' });
@@ -276,18 +286,24 @@ export function renderUI(root, initialTasks) {
   // Обработчик сортировки по дате
   sortByDateBtn.addEventListener('click', () => {
     const tasks = loadTasks();
-    const tasksWithDate = tasks.filter((t) => t.dueDate);
-    const tasksWithoutDate = tasks.filter((t) => !t.dueDate);
+    
+    // Разделяем на выполненные и невыполненные
+    const notDoneTasks = tasks.filter((t) => !t.done);
+    const doneTasks = tasks.filter((t) => t.done);
+    
+    // Сортируем только невыполненные задачи
+    const notDoneWithDate = notDoneTasks.filter((t) => t.dueDate);
+    const notDoneWithoutDate = notDoneTasks.filter((t) => !t.dueDate);
 
     // Сортируем задачи с датой по возрастанию (сегодня первыми)
-    tasksWithDate.sort((a, b) => {
+    notDoneWithDate.sort((a, b) => {
       const dateA = new Date(a.dueDate);
       const dateB = new Date(b.dueDate);
       return dateA - dateB;
     });
 
-    // Объединяем: сначала с датой, потом без даты
-    const sorted = [...tasksWithDate, ...tasksWithoutDate];
+    // Объединяем: сначала невыполненные (с датой, потом без даты), затем все выполненные
+    const sorted = [...notDoneWithDate, ...notDoneWithoutDate, ...doneTasks];
     saveTasks(sorted);
     rerenderList(list, sorted, renderItem);
 
@@ -336,12 +352,13 @@ export function renderUI(root, initialTasks) {
       newTask.dueDateType = dueDateData.type;
     }
     const next = [...current, newTask];
-    saveTasks(next);
+    const sortedNext = sortTasksWithDoneAtEnd(next);
+    saveTasks(sortedNext);
     input.value = '';
     input.dispatchEvent(new Event('input'));
     addBtn.disabled = false;
     addBtn.textContent = '➤';
-    rerenderList(list, next, renderItem);
+    rerenderList(list, sortedNext, renderItem);
     input.focus();
   });
 

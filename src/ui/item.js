@@ -18,6 +18,10 @@ export function renderItem(task) {
   row.style.position = 'relative';
   row.dataset.id = String(task.id);
 
+  if (task.done) {
+    row.style.background = '#f5f5f5';
+  }
+
   const drag = el('span', { className: 'tm-drag', text: '⠿' });
   drag.style.cursor = 'grab';
   drag.style.userSelect = 'none';
@@ -42,10 +46,6 @@ export function renderItem(task) {
   text.style.fontSize = '14px';
   text.style.lineHeight = '1.4';
   text.title = 'Нажмите, чтобы редактировать';
-  if (task.done) {
-    text.style.textDecoration = 'line-through';
-    text.style.opacity = '0.7';
-  }
 
   const deleteBtn = el('button', { type: 'button', text: '×', title: 'Удалить задачу' });
   deleteBtn.style.position = 'absolute';
@@ -89,6 +89,31 @@ export function renderItem(task) {
   linksWrap.style.gap = '10px';
   linksWrap.style.flexWrap = 'wrap';
   linksWrap.style.height = '30px';
+
+  if (task.done) {
+    const doneBtnWrap = el('div', { className: 'tm-done-btn-wrap' });
+    doneBtnWrap.style.position = 'relative';
+    doneBtnWrap.style.display = 'inline-block';
+    doneBtnWrap.style.lineHeight = '0';
+    const doneBtn = el('button', { type: 'button' });
+    doneBtn.style.padding = '6px 12px';
+    doneBtn.style.height = '100%';
+    doneBtn.style.border = '1px solid #66bb6a';
+    doneBtn.style.borderRadius = '8px';
+    doneBtn.style.background = '#e8f5e9';
+    doneBtn.style.color = '#2e7d32';
+    doneBtn.style.cursor = 'default';
+    doneBtn.style.fontSize = '12px';
+    doneBtn.style.fontWeight = '400';
+    doneBtn.style.lineHeight = '1';
+    doneBtn.style.whiteSpace = 'nowrap';
+    doneBtn.style.display = 'flex';
+    doneBtn.style.alignItems = 'center';
+    doneBtn.style.gap = '6px';
+    doneBtn.textContent = '✓ Выполнено';
+    doneBtnWrap.appendChild(doneBtn);
+    linksWrap.appendChild(doneBtnWrap);
+  }
 
   if (task.dueDate && task.dueDateLabel) {
     const overdue = isOverdue(task.dueDate);
@@ -306,10 +331,24 @@ export function renderItem(task) {
     const idx = tasks.findIndex((x) => String(x.id) === String(task.id));
     if (idx !== -1) {
       tasks[idx].done = !!checkbox.checked;
-      saveTasks(tasks);
+
+      // Если задача выполнена, удаляем временную метку
+      if (checkbox.checked) {
+        delete tasks[idx].dueDate;
+        delete tasks[idx].dueDateLabel;
+        delete tasks[idx].dueDateStart;
+        delete tasks[idx].dueDateType;
+      }
+
+      // Сортируем: выполненные задачи в конец
+      const notDone = tasks.filter((t) => !t.done);
+      const done = tasks.filter((t) => t.done);
+      const sortedTasks = [...notDone, ...done];
+
+      saveTasks(sortedTasks);
       const list = row.parentElement;
       if (list) {
-        rerenderList(list, tasks, renderItem);
+        rerenderList(list, sortedTasks, renderItem);
       }
     }
   });
