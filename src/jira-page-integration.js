@@ -89,6 +89,7 @@ function injectTaskInfo() {
   textDiv.style.fontSize = '14px';
   textDiv.style.color = '#424242';
   textDiv.style.lineHeight = '1.4';
+  textDiv.style.whiteSpace = 'pre-wrap';
   textDiv.textContent = task.text || '(текст задачи отсутствует)';
 
   // Метка даты если есть
