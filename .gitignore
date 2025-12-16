@@ -12,9 +12,6 @@
 /coverage
 
 # production
-/build
-/build-themes
-/dist
 
 # misc
 .DS_Store

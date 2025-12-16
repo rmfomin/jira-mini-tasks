@@ -2,6 +2,14 @@
 
 Personal to-do list with Jira Dashboard integration.
 
+## 🚀 Installation
+
+Before using the plugin, you need to create a widget in Jira Dashboard:
+
+- Find the gadget container element with an ID like `gadget-20269`
+- Paste `dist/jira-mini-tasks.user.js` code into tampermonkey
+- Replace the `numberId` value
+
 ## Features
 
 ### Creating and Editing Tasks
@@ -38,19 +46,3 @@ Features:
 - **"⇅ По дате" button**: Sorts tasks by date labels
 - **Order**: Today → Tomorrow → This week → Next week → Later → Forgotten → No date
 - Drag'n'Drop
-
----
-
-## 🚀 Installation
-
-Before using the plugin, you need to create a widget in Jira Dashboard:
-
-- Find the gadget container element with an ID like `gadget-20269`
-- Open `src/constants.js` and replace the value numberId
-- Rebuild the project:
-
-```bash
-npm install              # Install dependencies
-npm run build           # Build project → dist/jira-mini-tasks.user.js
-npm run dev             # Development mode with auto-rebuild
-```
