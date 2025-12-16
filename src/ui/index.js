@@ -286,11 +286,11 @@ export function renderUI(root, initialTasks) {
   // Обработчик сортировки по дате
   sortByDateBtn.addEventListener('click', () => {
     const tasks = loadTasks();
-    
+
     // Разделяем на выполненные и невыполненные
     const notDoneTasks = tasks.filter((t) => !t.done);
     const doneTasks = tasks.filter((t) => t.done);
-    
+
     // Сортируем только невыполненные задачи
     const notDoneWithDate = notDoneTasks.filter((t) => t.dueDate);
     const notDoneWithoutDate = notDoneTasks.filter((t) => !t.dueDate);
@@ -351,7 +351,7 @@ export function renderUI(root, initialTasks) {
       newTask.dueDateStart = dueDateData.startDate;
       newTask.dueDateType = dueDateData.type;
     }
-    const next = [...current, newTask];
+    const next = [newTask, ...current];
     const sortedNext = sortTasksWithDoneAtEnd(next);
     saveTasks(sortedNext);
     input.value = '';
