@@ -12,8 +12,10 @@ export function renderItem(task) {
   row.style.alignItems = 'center';
   row.style.flexWrap = 'wrap';
   row.style.padding = '6px';
+  row.style.paddingRight = '20px';
   row.style.border = '1px solid #ededed';
   row.style.borderRadius = '6px';
+  row.style.position = 'relative';
   row.dataset.id = String(task.id);
 
   const drag = el('span', { className: 'tm-drag', text: '⠿' });
@@ -38,54 +40,47 @@ export function renderItem(task) {
   text.style.whiteSpace = 'pre-wrap';
   text.style.cursor = 'text';
   text.style.fontSize = '14px';
+  text.style.lineHeight = '1.4';
   text.title = 'Нажмите, чтобы редактировать';
   if (task.done) {
     text.style.textDecoration = 'line-through';
     text.style.opacity = '0.7';
   }
 
-  const menuWrap = el('div', { className: 'tm-menu-wrap' });
-  menuWrap.style.position = 'relative';
-  const menuBtn = el('button', { type: 'button', title: 'Меню', 'aria-label': 'Меню', text: '☰' });
-  menuBtn.style.padding = '4px 8px';
-  menuBtn.style.marginLeft = '14px';
-  menuBtn.style.border = '1px solid #bdbdbd';
-  menuBtn.style.borderRadius = '6px';
-  menuBtn.style.background = '#f3f3f3';
-  menuBtn.style.cursor = 'pointer';
-  const menu = el('div', { className: 'tm-item-menu' });
-  menu.style.position = 'absolute';
-  menu.style.top = 'calc(100% + 4px)';
-  menu.style.right = '0';
-  menu.style.background = '#fff';
-  menu.style.border = '1px solid #e0e0e0';
-  menu.style.borderRadius = '6px';
-  menu.style.boxShadow = '0 2px 6px rgba(0,0,0,0.08)';
-  menu.style.padding = '4px';
-  menu.style.display = 'none';
-  menu.style.zIndex = '1000';
+  const deleteBtn = el('button', { type: 'button', text: '×', title: 'Удалить задачу' });
+  deleteBtn.style.position = 'absolute';
+  deleteBtn.style.top = '6px';
+  deleteBtn.style.right = '6px';
+  deleteBtn.style.width = '18px';
+  deleteBtn.style.height = '18px';
+  deleteBtn.style.padding = '0';
+  deleteBtn.style.border = 'none';
+  deleteBtn.style.borderRadius = '4px';
+  deleteBtn.style.background = 'transparent';
+  deleteBtn.style.color = '#9e9e9e';
+  deleteBtn.style.fontSize = '18px';
+  deleteBtn.style.lineHeight = '1';
+  deleteBtn.style.cursor = 'pointer';
+  deleteBtn.style.opacity = '0';
+  deleteBtn.style.transition = 'opacity 0.2s ease, color 0.1s ease';
+  deleteBtn.style.display = 'flex';
+  deleteBtn.style.alignItems = 'center';
+  deleteBtn.style.justifyContent = 'center';
 
-  const deleteItem = el('button', { type: 'button', text: 'Удалить' });
-  deleteItem.style.display = 'block';
-  deleteItem.style.width = '100%';
-  deleteItem.style.textAlign = 'left';
-  deleteItem.style.padding = '6px 8px';
-  deleteItem.style.border = '1px solid transparent';
-  deleteItem.style.borderRadius = '4px';
-  deleteItem.style.background = '#fff';
-  deleteItem.style.cursor = 'pointer';
-  deleteItem.style.whiteSpace = 'nowrap';
-
-  deleteItem.addEventListener('mouseover', () => { deleteItem.style.background = '#f6f6f6'; });
-  deleteItem.addEventListener('mouseout', () => { deleteItem.style.background = '#fff'; });
+  deleteBtn.addEventListener('mouseover', () => {
+    deleteBtn.style.color = '#d32f2f';
+  });
+  deleteBtn.addEventListener('mouseout', () => {
+    deleteBtn.style.color = '#9e9e9e';
+  });
 
   row.appendChild(drag);
   row.appendChild(checkbox);
   row.appendChild(text);
-  menu.appendChild(deleteItem);
-  menuWrap.appendChild(menuBtn);
-  menuWrap.appendChild(menu);
-  row.appendChild(menuWrap);
+  row.appendChild(deleteBtn);
+
+  row.addEventListener('mouseover', () => { deleteBtn.style.opacity = '1'; });
+  row.addEventListener('mouseout', () => { deleteBtn.style.opacity = '0'; });
 
   const linksWrap = el('div', { className: 'tm-links-wrap' });
   linksWrap.style.flexBasis = '100%';
@@ -321,17 +316,8 @@ export function renderItem(task) {
 
   text.addEventListener('click', () => { startEditMode(row, task); });
 
-  menuBtn.addEventListener('click', () => {
-    const allMenus = document.querySelectorAll('.tm-item-menu');
-    allMenus.forEach((m) => {
-      if (m !== menu) {
-        m.style.display = 'none';
-      }
-    });
-    menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
-  });
-
-  deleteItem.addEventListener('click', () => {
+  deleteBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
     const tasks = loadTasks();
     const next = tasks.filter((x) => String(x.id) !== String(task.id));
     saveTasks(next);
@@ -515,8 +501,9 @@ export function startEditMode(row, task) {
   const input = el('textarea', { rows: '1', wrap: 'soft' });
   input.value = task.text;
   input.style.flex = '1';
-  input.style.padding = '4px 6px';
-  input.style.border = '1px solid #dcdcdc';
+  input.style.padding = '0';
+  input.style.border = 'none';
+  input.style.outline = 'none';
   input.style.borderRadius = '6px';
   input.style.resize = 'none';
   input.style.overflow = 'hidden';
@@ -525,11 +512,12 @@ export function startEditMode(row, task) {
 
 
   row.replaceChild(input, currentTextEl);
-  const oldMenuWrap = row.querySelector('.tm-menu-wrap');
-  if (oldMenuWrap) {
-    row.removeChild(oldMenuWrap);
+  const deleteBtn = row.querySelector('button[title="Удалить задачу"]');
+  if (deleteBtn) {
+    deleteBtn.style.display = 'none';
   }
   row.style.flexWrap = 'wrap';
+  row.style.border = '1px solid #1976d2';
   row.dataset.editing = '1';
   const dragHandle = row.querySelector('.tm-drag');
   if (dragHandle) {
@@ -550,7 +538,7 @@ export function startEditMode(row, task) {
       return;
     }
     input.disabled = true;
-    input.style.border = '1px solid #dcdcdc';
+    row.style.border = '1px solid #1976d2';
     const jiraKey = extractJiraKey(val);
     const dueDateData = extractDueDate(val);
     let jiraData = null;
@@ -558,7 +546,7 @@ export function startEditMode(row, task) {
     if (jiraKey) {
       jiraData = await fetchJiraIssue(jiraKey);
       if (jiraData.error) {
-        input.style.border = '2px solid #d32f2f';
+        row.style.border = '2px solid #d32f2f';
         input.disabled = false;
         return;
       }
