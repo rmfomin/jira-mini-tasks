@@ -26,6 +26,8 @@ Add a date using the `@` symbol:
 - `@later` / `@позже` / `@позднее` — Later
 - `@забыто` — Forgotten (1 year ago)
 
+Features:
+
 - Date is shown as a button with the `＠` symbol
 - On hover, displays exact date or date range
 - Overdue tasks are marked in red
