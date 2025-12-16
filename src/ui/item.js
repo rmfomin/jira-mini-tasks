@@ -523,20 +523,6 @@ export function startEditMode(row, task) {
   input.style.lineHeight = '1.4';
   input.style.fontSize = '14px';
 
-  const saveBtn = el('button', { type: 'button', text: 'Сохранить' });
-  saveBtn.style.padding = '4px 8px';
-  saveBtn.style.border = '1px solid #3a873a';
-  saveBtn.style.borderRadius = '6px';
-  saveBtn.style.background = '#4caf50';
-  saveBtn.style.color = '#fff';
-  saveBtn.style.cursor = 'pointer';
-
-  const cancelBtn = el('button', { type: 'button', text: 'Отмена' });
-  cancelBtn.style.padding = '4px 8px';
-  cancelBtn.style.border = '1px solid #bdbdbd';
-  cancelBtn.style.borderRadius = '6px';
-  cancelBtn.style.background = '#f3f3f3';
-  cancelBtn.style.cursor = 'pointer';
 
   row.replaceChild(input, currentTextEl);
   const oldMenuWrap = row.querySelector('.tm-menu-wrap');
@@ -553,33 +539,17 @@ export function startEditMode(row, task) {
   }
   row.draggable = false;
 
-  const actions = el('div', { className: 'tm-edit-actions' });
-  actions.style.display = 'flex';
-  actions.style.gap = '8px';
-  actions.style.marginTop = '6px';
-  actions.style.flexBasis = '100%';
-
-  actions.appendChild(saveBtn);
-  actions.appendChild(cancelBtn);
-  row.appendChild(actions);
   autosizeTextarea(input);
-  const hintEdit = el('div', { className: 'tm-hint-edit', text: 'Enter — сохранить, Shift+Enter — новая строка, Esc — отменить' });
-  hintEdit.style.fontSize = '12px';
-  hintEdit.style.color = '#777';
-  hintEdit.style.flexBasis = '100%';
-  hintEdit.style.marginTop = '2px';
-  row.appendChild(hintEdit);
 
   input.focus();
   input.select();
 
-  saveBtn.addEventListener('click', async () => {
+  const handleSave = async () => {
     const val = String(input.value || '').trim();
     if (val.length === 0) {
       return;
     }
-    saveBtn.disabled = true;
-    saveBtn.textContent = '⏳';
+    input.disabled = true;
     input.style.border = '1px solid #dcdcdc';
     const jiraKey = extractJiraKey(val);
     const dueDateData = extractDueDate(val);
@@ -589,8 +559,7 @@ export function startEditMode(row, task) {
       jiraData = await fetchJiraIssue(jiraKey);
       if (jiraData.error) {
         input.style.border = '2px solid #d32f2f';
-        saveBtn.disabled = false;
-        saveBtn.textContent = 'Сохранить';
+        input.disabled = false;
         return;
       }
       taskText = taskText.replace(/\b[A-Z]+-\d+\b/, '').trim();
@@ -625,22 +594,22 @@ export function startEditMode(row, task) {
         rerenderList(list, tasks, renderItem);
       }
     }
-  });
+  };
 
-  cancelBtn.addEventListener('click', () => {
+  const handleCancel = () => {
     const list = row.parentElement;
     if (list) {
       rerenderList(list, loadTasks(), renderItem);
     }
-  });
+  };
 
   input.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      saveBtn.click();
+      handleSave();
     } else if (e.key === 'Escape') {
       e.preventDefault();
-      cancelBtn.click();
+      handleCancel();
     }
   });
 }
