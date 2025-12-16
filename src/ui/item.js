@@ -37,7 +37,7 @@ export function renderItem(task) {
   text.style.wordBreak = 'break-word';
   text.style.whiteSpace = 'pre-wrap';
   text.style.cursor = 'text';
-  text.style.fontSize = '15px';
+  text.style.fontSize = '14px';
   text.title = 'Нажмите, чтобы редактировать';
   if (task.done) {
     text.style.textDecoration = 'line-through';
@@ -521,6 +521,7 @@ export function startEditMode(row, task) {
   input.style.resize = 'none';
   input.style.overflow = 'hidden';
   input.style.lineHeight = '1.4';
+  input.style.fontSize = '14px';
 
   const saveBtn = el('button', { type: 'button', text: 'Сохранить' });
   saveBtn.style.padding = '4px 8px';
