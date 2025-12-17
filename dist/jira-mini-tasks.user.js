@@ -326,6 +326,103 @@
     };
   }
 
+  // src/utils/task-parsing.js
+  function extractJiraKey(text) {
+    const match = text.match(/\b([A-Z]+-\d+)\b/);
+    return match ? match[1] : null;
+  }
+  function extractDueDate(text) {
+    const match = text.match(/@([a-zа-яё]+)/i);
+    if (!match) {
+      return null;
+    }
+    const keyword = match[1].toLowerCase();
+    const dateMap = {
+      today: "today",
+      tomorrow: "tomorrow",
+      thisweek: "thisweek",
+      nextweek: "nextweek",
+      later: "later",
+      forgotten: "forgotten",
+      \u0441\u0435\u0433\u043E\u0434\u043D\u044F: "today",
+      \u0437\u0430\u0432\u0442\u0440\u0430: "tomorrow",
+      \u044D\u0442\u0430\u043D\u0435\u0434\u0435\u043B\u044F: "thisweek",
+      \u0441\u043B\u0435\u0434\u043D\u0435\u0434\u0435\u043B\u044F: "nextweek",
+      \u043F\u043E\u0437\u0436\u0435: "later",
+      \u043F\u043E\u0437\u0434\u043D\u0435\u0435: "later",
+      \u0437\u0430\u0431\u044B\u0442\u043E: "forgotten"
+    };
+    const normalizedKey = dateMap[keyword];
+    if (!normalizedKey) {
+      return null;
+    }
+    return parseDateKeyword(normalizedKey);
+  }
+  function parseDateKeyword(keyword) {
+    const now = /* @__PURE__ */ new Date();
+    const labels = {
+      today: "\u0421\u0435\u0433\u043E\u0434\u043D\u044F",
+      tomorrow: "\u0417\u0430\u0432\u0442\u0440\u0430",
+      thisweek: "\u042D\u0442\u0430 \u043D\u0435\u0434\u0435\u043B\u044F",
+      nextweek: "\u0421\u043B\u0435\u0434.\u043D\u0435\u0434\u0435\u043B\u044F",
+      later: "\u041F\u043E\u0437\u0436\u0435",
+      forgotten: "\u0417\u0430\u0431\u044B\u0442\u043E"
+    };
+    let targetDate = new Date(now);
+    let startDate = null;
+    switch (keyword) {
+      case "today":
+        break;
+      case "tomorrow":
+        targetDate.setDate(now.getDate() + 1);
+        break;
+      case "thisweek":
+        startDate = new Date(now);
+        targetDate.setDate(now.getDate() + (7 - now.getDay()));
+        break;
+      case "nextweek":
+        startDate = new Date(now);
+        startDate.setDate(now.getDate() + (7 - now.getDay()) + 1);
+        targetDate.setDate(now.getDate() + (14 - now.getDay()));
+        break;
+      case "later":
+        targetDate.setDate(now.getDate() + 30);
+        break;
+      case "forgotten":
+        targetDate.setDate(now.getDate() - 365);
+        break;
+      default:
+        return null;
+    }
+    return {
+      date: targetDate.toISOString().split("T")[0],
+      label: labels[keyword],
+      startDate: startDate ? startDate.toISOString().split("T")[0] : null,
+      type: keyword
+    };
+  }
+  async function fetchJiraIssue(issueKey) {
+    try {
+      const response = await fetch(`https://jira.theteamsoft.com/rest/api/2/issue/${issueKey}?fields=summary`, {
+        method: "GET",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" }
+      });
+      const data = await response.json();
+      if (data.errorMessages || data.errors) {
+        return { error: true };
+      }
+      return {
+        key: data.key,
+        summary: data.fields.summary,
+        url: `https://jira.theteamsoft.com/browse/${data.key}`
+      };
+    } catch (err) {
+      console.error("tpm: \u041E\u0448\u0438\u0431\u043A\u0430 \u0437\u0430\u0433\u0440\u0443\u0437\u043A\u0438 Jira issue:", err);
+      return { error: true };
+    }
+  }
+
   // src/ui/item.js
   function renderItem(task) {
     const row = el("div", { className: "tm-item" });
@@ -684,80 +781,6 @@
     });
     return row;
   }
-  function extractJiraKey(text) {
-    const match = text.match(/\b([A-Z]+-\d+)\b/);
-    return match ? match[1] : null;
-  }
-  function extractDueDate(text) {
-    const match = text.match(/@([a-zа-яё]+)/i);
-    if (!match) {
-      return null;
-    }
-    const keyword = match[1].toLowerCase();
-    const dateMap = {
-      today: "today",
-      tomorrow: "tomorrow",
-      thisweek: "thisweek",
-      nextweek: "nextweek",
-      later: "later",
-      forgotten: "forgotten",
-      \u0441\u0435\u0433\u043E\u0434\u043D\u044F: "today",
-      \u0437\u0430\u0432\u0442\u0440\u0430: "tomorrow",
-      \u044D\u0442\u0430\u043D\u0435\u0434\u0435\u043B\u044F: "thisweek",
-      \u0441\u043B\u0435\u0434\u043D\u0435\u0434\u0435\u043B\u044F: "nextweek",
-      \u043F\u043E\u0437\u0436\u0435: "later",
-      \u043F\u043E\u0437\u0434\u043D\u0435\u0435: "later",
-      \u0437\u0430\u0431\u044B\u0442\u043E: "forgotten"
-    };
-    const normalizedKey = dateMap[keyword];
-    if (!normalizedKey) {
-      return null;
-    }
-    return parseDateKeyword(normalizedKey);
-  }
-  function parseDateKeyword(keyword) {
-    const now = /* @__PURE__ */ new Date();
-    const labels = {
-      today: "\u0421\u0435\u0433\u043E\u0434\u043D\u044F",
-      tomorrow: "\u0417\u0430\u0432\u0442\u0440\u0430",
-      thisweek: "\u042D\u0442\u0430 \u043D\u0435\u0434\u0435\u043B\u044F",
-      nextweek: "\u0421\u043B\u0435\u0434.\u043D\u0435\u0434\u0435\u043B\u044F",
-      later: "\u041F\u043E\u0437\u0436\u0435",
-      forgotten: "\u0417\u0430\u0431\u044B\u0442\u043E"
-    };
-    let targetDate = new Date(now);
-    let startDate = null;
-    switch (keyword) {
-      case "today":
-        break;
-      case "tomorrow":
-        targetDate.setDate(now.getDate() + 1);
-        break;
-      case "thisweek":
-        startDate = new Date(now);
-        targetDate.setDate(now.getDate() + (7 - now.getDay()));
-        break;
-      case "nextweek":
-        startDate = new Date(now);
-        startDate.setDate(now.getDate() + (7 - now.getDay()) + 1);
-        targetDate.setDate(now.getDate() + (14 - now.getDay()));
-        break;
-      case "later":
-        targetDate.setDate(now.getDate() + 30);
-        break;
-      case "forgotten":
-        targetDate.setDate(now.getDate() - 365);
-        break;
-      default:
-        return null;
-    }
-    return {
-      date: targetDate.toISOString().split("T")[0],
-      label: labels[keyword],
-      startDate: startDate ? startDate.toISOString().split("T")[0] : null,
-      type: keyword
-    };
-  }
   function formatDateDisplay(dateStr) {
     const date = new Date(dateStr);
     const months = ["\u044F\u043D\u0432\u0430\u0440\u044F", "\u0444\u0435\u0432\u0440\u0430\u043B\u044F", "\u043C\u0430\u0440\u0442\u0430", "\u0430\u043F\u0440\u0435\u043B\u044F", "\u043C\u0430\u044F", "\u0438\u044E\u043D\u044F", "\u0438\u044E\u043B\u044F", "\u0430\u0432\u0433\u0443\u0441\u0442\u0430", "\u0441\u0435\u043D\u0442\u044F\u0431\u0440\u044F", "\u043E\u043A\u0442\u044F\u0431\u0440\u044F", "\u043D\u043E\u044F\u0431\u0440\u044F", "\u0434\u0435\u043A\u0430\u0431\u0440\u044F"];
@@ -784,27 +807,6 @@
     const g = parseInt(hex.slice(3, 5), 16);
     const b = parseInt(hex.slice(5, 7), 16);
     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-  }
-  async function fetchJiraIssue(issueKey) {
-    try {
-      const response = await fetch(`https://jira.theteamsoft.com/rest/api/2/issue/${issueKey}?fields=summary`, {
-        method: "GET",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" }
-      });
-      const data = await response.json();
-      if (data.errorMessages || data.errors) {
-        return { error: true };
-      }
-      return {
-        key: data.key,
-        summary: data.fields.summary,
-        url: `https://jira.theteamsoft.com/browse/${data.key}`
-      };
-    } catch (err) {
-      console.error("tpm: \u041E\u0448\u0438\u0431\u043A\u0430 \u0437\u0430\u0433\u0440\u0443\u0437\u043A\u0438 Jira issue:", err);
-      return { error: true };
-    }
   }
   function startEditMode(row, task) {
     const list = row.parentElement;
@@ -921,101 +923,6 @@
   }
 
   // src/ui/index.js
-  function extractJiraKey2(text) {
-    const match = text.match(/\b([A-Z]+-\d+)\b/);
-    return match ? match[1] : null;
-  }
-  function extractDueDate2(text) {
-    const match = text.match(/@([a-zа-яё]+)/i);
-    if (!match) {
-      return null;
-    }
-    const keyword = match[1].toLowerCase();
-    const dateMap = {
-      today: "today",
-      tomorrow: "tomorrow",
-      thisweek: "thisweek",
-      nextweek: "nextweek",
-      later: "later",
-      forgotten: "forgotten",
-      \u0441\u0435\u0433\u043E\u0434\u043D\u044F: "today",
-      \u0437\u0430\u0432\u0442\u0440\u0430: "tomorrow",
-      \u044D\u0442\u0430\u043D\u0435\u0434\u0435\u043B\u044F: "thisweek",
-      \u0441\u043B\u0435\u0434\u043D\u0435\u0434\u0435\u043B\u044F: "nextweek",
-      \u043F\u043E\u0437\u0436\u0435: "later",
-      \u043F\u043E\u0437\u0434\u043D\u0435\u0435: "later",
-      \u0437\u0430\u0431\u044B\u0442\u043E: "forgotten"
-    };
-    const normalizedKey = dateMap[keyword];
-    if (!normalizedKey) {
-      return null;
-    }
-    return parseDateKeyword2(normalizedKey);
-  }
-  function parseDateKeyword2(keyword) {
-    const now = /* @__PURE__ */ new Date();
-    const labels = {
-      today: "\u0421\u0435\u0433\u043E\u0434\u043D\u044F",
-      tomorrow: "\u0417\u0430\u0432\u0442\u0440\u0430",
-      thisweek: "\u042D\u0442\u0430 \u043D\u0435\u0434\u0435\u043B\u044F",
-      nextweek: "\u0421\u043B\u0435\u0434.\u043D\u0435\u0434\u0435\u043B\u044F",
-      later: "\u041F\u043E\u0437\u0436\u0435",
-      forgotten: "\u0417\u0430\u0431\u044B\u0442\u043E"
-    };
-    let targetDate = new Date(now);
-    let startDate = null;
-    switch (keyword) {
-      case "today":
-        break;
-      case "tomorrow":
-        targetDate.setDate(now.getDate() + 1);
-        break;
-      case "thisweek":
-        startDate = new Date(now);
-        targetDate.setDate(now.getDate() + (7 - now.getDay()));
-        break;
-      case "nextweek":
-        startDate = new Date(now);
-        startDate.setDate(now.getDate() + (7 - now.getDay()) + 1);
-        targetDate.setDate(now.getDate() + (14 - now.getDay()));
-        break;
-      case "later":
-        targetDate.setDate(now.getDate() + 30);
-        break;
-      case "forgotten":
-        targetDate.setDate(now.getDate() - 365);
-        break;
-      default:
-        return null;
-    }
-    return {
-      date: targetDate.toISOString().split("T")[0],
-      label: labels[keyword],
-      startDate: startDate ? startDate.toISOString().split("T")[0] : null,
-      type: keyword
-    };
-  }
-  async function fetchJiraIssue2(issueKey) {
-    try {
-      const response = await fetch(`https://jira.theteamsoft.com/rest/api/2/issue/${issueKey}?fields=summary`, {
-        method: "GET",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" }
-      });
-      const data = await response.json();
-      if (data.errorMessages || data.errors) {
-        return { error: true };
-      }
-      return {
-        key: data.key,
-        summary: data.fields.summary,
-        url: `https://jira.theteamsoft.com/browse/${data.key}`
-      };
-    } catch (err) {
-      console.error("tpm: \u041E\u0448\u0438\u0431\u043A\u0430 \u0437\u0430\u0433\u0440\u0443\u0437\u043A\u0438 Jira issue:", err);
-      return { error: true };
-    }
-  }
   function sortTasksWithDoneAtEnd(tasks) {
     const notDone = tasks.filter((t) => !t.done);
     const done = tasks.filter((t) => t.done);
@@ -1137,12 +1044,12 @@
       addBtn.disabled = true;
       addBtn.textContent = "\u23F3";
       input.style.border = "1px solid #dcdcdc";
-      const jiraKey = extractJiraKey2(val);
-      const dueDateData = extractDueDate2(val);
+      const jiraKey = extractJiraKey(val);
+      const dueDateData = extractDueDate(val);
       let jiraData = null;
       let taskText = val;
       if (jiraKey) {
-        jiraData = await fetchJiraIssue2(jiraKey);
+        jiraData = await fetchJiraIssue(jiraKey);
         if (jiraData.error) {
           input.style.border = "2px solid #d32f2f";
           addBtn.disabled = false;
@@ -1266,23 +1173,137 @@
     due.setHours(0, 0, 0, 0);
     return due < now;
   }
-  function injectTaskInfo() {
-    const issueKey = getIssueKeyFromUrl();
-    if (!issueKey) {
-      return;
-    }
-    const tasks = loadTasks();
-    const task = tasks.find((t) => t.jiraKey === issueKey);
-    if (!task) {
-      return;
-    }
-    const pageHeader = document.querySelector(".aui-page-header");
-    if (!pageHeader) {
-      return;
-    }
-    if (document.querySelector("#tm-jira-task-info")) {
-      return;
-    }
+  function createTaskForm(issueKey, existingTask = null) {
+    const formContainer = el("div", { id: "tm-jira-task-form" });
+    formContainer.style.marginTop = "12px";
+    formContainer.style.marginLeft = "20px";
+    formContainer.style.marginBottom = "16px";
+    formContainer.style.maxWidth = "900px";
+    formContainer.style.padding = "12px 16px";
+    formContainer.style.border = "1px solid #bbdefb";
+    formContainer.style.borderRadius = "6px";
+    formContainer.style.background = "#f5f9ff";
+    formContainer.style.display = "flex";
+    formContainer.style.flexDirection = "column";
+    formContainer.style.gap = "10px";
+    const titleDiv = el("div", { text: existingTask ? "\u0420\u0435\u0434\u0430\u043A\u0442\u0438\u0440\u043E\u0432\u0430\u0442\u044C \u0437\u0430\u0434\u0430\u0447\u0443" : "\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u0437\u0430\u0434\u0430\u0447\u0443" });
+    titleDiv.style.fontSize = "13px";
+    titleDiv.style.fontWeight = "600";
+    titleDiv.style.color = "#1976d2";
+    const textarea = el("textarea", {
+      placeholder: "\u041E\u043F\u0438\u0448\u0438\u0442\u0435 \u0437\u0430\u0434\u0430\u0447\u0443... (\u043C\u043E\u0436\u043D\u043E \u0438\u0441\u043F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u0442\u044C @\u0441\u0435\u0433\u043E\u0434\u043D\u044F, @\u0437\u0430\u0432\u0442\u0440\u0430 \u0438 \u0442.\u0434.)",
+      rows: "3",
+      wrap: "soft"
+    });
+    textarea.value = existingTask ? existingTask.text : "";
+    textarea.style.width = "100%";
+    textarea.style.padding = "8px";
+    textarea.style.border = "1px solid #dcdcdc";
+    textarea.style.borderRadius = "6px";
+    textarea.style.fontSize = "14px";
+    textarea.style.lineHeight = "1.4";
+    textarea.style.resize = "vertical";
+    textarea.style.fontFamily = "inherit";
+    textarea.style.boxSizing = "border-box";
+    const buttonsDiv = el("div");
+    buttonsDiv.style.display = "flex";
+    buttonsDiv.style.gap = "8px";
+    buttonsDiv.style.alignItems = "center";
+    const saveBtn = el("button", { type: "button", text: existingTask ? "\u0421\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C" : "\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C" });
+    saveBtn.style.padding = "6px 16px";
+    saveBtn.style.border = "1px solid #3572b0";
+    saveBtn.style.borderRadius = "6px";
+    saveBtn.style.background = "#4a9ae9";
+    saveBtn.style.color = "#fff";
+    saveBtn.style.cursor = "pointer";
+    saveBtn.style.fontSize = "14px";
+    saveBtn.style.fontWeight = "500";
+    const cancelBtn = el("button", { type: "button", text: "\u041E\u0442\u043C\u0435\u043D\u0430" });
+    cancelBtn.style.padding = "6px 16px";
+    cancelBtn.style.border = "1px solid #ccc";
+    cancelBtn.style.borderRadius = "6px";
+    cancelBtn.style.background = "#fff";
+    cancelBtn.style.color = "#666";
+    cancelBtn.style.cursor = "pointer";
+    cancelBtn.style.fontSize = "14px";
+    const hintDiv = el("div", { text: "Enter \u2014 \u0441\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C, Shift+Enter \u2014 \u043D\u043E\u0432\u0430\u044F \u0441\u0442\u0440\u043E\u043A\u0430, Esc \u2014 \u043E\u0442\u043C\u0435\u043D\u0430" });
+    hintDiv.style.fontSize = "12px";
+    hintDiv.style.color = "#777";
+    hintDiv.style.marginLeft = "auto";
+    buttonsDiv.appendChild(saveBtn);
+    buttonsDiv.appendChild(cancelBtn);
+    buttonsDiv.appendChild(hintDiv);
+    formContainer.appendChild(titleDiv);
+    formContainer.appendChild(textarea);
+    formContainer.appendChild(buttonsDiv);
+    autosizeTextarea(textarea);
+    const handleSave = async () => {
+      const val = String(textarea.value || "").trim();
+      if (!val) {
+        return;
+      }
+      saveBtn.disabled = true;
+      cancelBtn.disabled = true;
+      textarea.disabled = true;
+      saveBtn.textContent = "\u23F3";
+      formContainer.style.border = "1px solid #bbdefb";
+      const dueDateData = extractDueDate(val);
+      let taskText = val;
+      if (dueDateData) {
+        taskText = taskText.replace(/@[a-zа-яё]+/i, "").trim();
+      }
+      const tasks = loadTasks();
+      if (existingTask) {
+        const idx = tasks.findIndex((t) => String(t.id) === String(existingTask.id));
+        if (idx !== -1) {
+          tasks[idx].text = taskText;
+          if (dueDateData) {
+            tasks[idx].dueDate = dueDateData.date;
+            tasks[idx].dueDateLabel = dueDateData.label;
+            tasks[idx].dueDateStart = dueDateData.startDate;
+            tasks[idx].dueDateType = dueDateData.type;
+          }
+          saveTasks(tasks);
+        }
+      } else {
+        const jiraSummary = document.querySelector("#summary-val")?.textContent || "";
+        const newTask = {
+          id: Date.now(),
+          text: taskText,
+          done: false,
+          createdAt: Date.now(),
+          jiraKey: issueKey,
+          jiraSummary,
+          jiraUrl: `https://jira.theteamsoft.com/browse/${issueKey}`
+        };
+        if (dueDateData) {
+          newTask.dueDate = dueDateData.date;
+          newTask.dueDateLabel = dueDateData.label;
+          newTask.dueDateStart = dueDateData.startDate;
+          newTask.dueDateType = dueDateData.type;
+        }
+        tasks.unshift(newTask);
+        saveTasks(tasks);
+      }
+      refreshTaskDisplay();
+    };
+    const handleCancel = () => {
+      refreshTaskDisplay();
+    };
+    saveBtn.addEventListener("click", handleSave);
+    cancelBtn.addEventListener("click", handleCancel);
+    textarea.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        handleSave();
+      } else if (e.key === "Escape") {
+        e.preventDefault();
+        handleCancel();
+      }
+    });
+    return formContainer;
+  }
+  function createTaskDisplay(task) {
     const infoBlock = el("div", { id: "tm-jira-task-info" });
     infoBlock.style.marginTop = "12px";
     infoBlock.style.marginLeft = "20px";
@@ -1295,7 +1316,10 @@
     infoBlock.style.display = "flex";
     infoBlock.style.flexDirection = "column";
     infoBlock.style.gap = "6px";
-    const titleDiv = el("div");
+    infoBlock.style.cursor = "pointer";
+    infoBlock.style.transition = "background 0.2s ease, border-color 0.2s ease";
+    infoBlock.title = "\u041D\u0430\u0436\u043C\u0438\u0442\u0435, \u0447\u0442\u043E\u0431\u044B \u0440\u0435\u0434\u0430\u043A\u0442\u0438\u0440\u043E\u0432\u0430\u0442\u044C";
+    const titleDiv = el("div", { text: "\u0417\u0430\u0434\u0430\u0447\u0430" });
     titleDiv.style.fontSize = "13px";
     titleDiv.style.fontWeight = "600";
     titleDiv.style.color = "#1976d2";
@@ -1325,7 +1349,110 @@
       infoBlock.appendChild(dueDateDiv);
     }
     infoBlock.appendChild(timeDiv);
-    pageHeader.parentNode.insertBefore(infoBlock, pageHeader.nextSibling);
+    infoBlock.addEventListener("mouseenter", () => {
+      infoBlock.style.background = "#e3f2fd";
+      infoBlock.style.borderColor = "#90caf9";
+    });
+    infoBlock.addEventListener("mouseleave", () => {
+      infoBlock.style.background = "#f5f9ff";
+      infoBlock.style.borderColor = "#e3f2fd";
+    });
+    infoBlock.addEventListener("click", () => {
+      const issueKey = getIssueKeyFromUrl();
+      if (issueKey) {
+        showTaskForm(issueKey, task);
+      }
+    });
+    return infoBlock;
+  }
+  function createAddTaskButton(issueKey) {
+    const button = el("button", { type: "button", text: "+ \u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u0437\u0430\u0434\u0430\u0447\u0443", id: "tm-jira-add-task" });
+    button.style.marginTop = "12px";
+    button.style.marginLeft = "20px";
+    button.style.marginBottom = "16px";
+    button.style.padding = "10px 16px";
+    button.style.border = "1px solid #3572b0";
+    button.style.borderRadius = "6px";
+    button.style.background = "#4a9ae9";
+    button.style.color = "#fff";
+    button.style.cursor = "pointer";
+    button.style.fontSize = "14px";
+    button.style.fontWeight = "500";
+    button.style.transition = "background 0.2s ease";
+    button.addEventListener("mouseenter", () => {
+      button.style.background = "#357abd";
+    });
+    button.addEventListener("mouseleave", () => {
+      button.style.background = "#4a9ae9";
+    });
+    button.addEventListener("click", () => {
+      showTaskForm(issueKey);
+    });
+    return button;
+  }
+  function showTaskForm(issueKey, existingTask = null) {
+    const oldBlock = document.querySelector("#tm-jira-task-info");
+    const oldForm = document.querySelector("#tm-jira-task-form");
+    const oldButton = document.querySelector("#tm-jira-add-task");
+    if (oldBlock) oldBlock.remove();
+    if (oldForm) oldForm.remove();
+    if (oldButton) oldButton.remove();
+    const form = createTaskForm(issueKey, existingTask);
+    const stalker = document.querySelector("#stalker");
+    const pageHeader = stalker ? stalker.querySelector(".aui-page-header") : document.querySelector(".aui-page-header");
+    if (pageHeader && pageHeader.parentNode) {
+      pageHeader.parentNode.insertBefore(form, pageHeader.nextSibling);
+      const textarea = form.querySelector("textarea");
+      if (textarea) {
+        setTimeout(() => {
+          textarea.focus();
+          if (existingTask) {
+            textarea.select();
+          }
+        }, 100);
+      }
+    }
+  }
+  function refreshTaskDisplay() {
+    const issueKey = getIssueKeyFromUrl();
+    if (!issueKey) {
+      return;
+    }
+    const oldBlock = document.querySelector("#tm-jira-task-info");
+    const oldForm = document.querySelector("#tm-jira-task-form");
+    const oldButton = document.querySelector("#tm-jira-add-task");
+    if (oldBlock) oldBlock.remove();
+    if (oldForm) oldForm.remove();
+    if (oldButton) oldButton.remove();
+    const tasks = loadTasks();
+    const task = tasks.find((t) => t.jiraKey === issueKey);
+    const stalker = document.querySelector("#stalker");
+    const pageHeader = stalker ? stalker.querySelector(".aui-page-header") : document.querySelector(".aui-page-header");
+    if (!pageHeader || !pageHeader.parentNode) {
+      return;
+    }
+    if (task) {
+      const display = createTaskDisplay(task);
+      pageHeader.parentNode.insertBefore(display, pageHeader.nextSibling);
+    } else {
+      const button = createAddTaskButton(issueKey);
+      pageHeader.parentNode.insertBefore(button, pageHeader.nextSibling);
+    }
+  }
+  function injectTaskInfo() {
+    const issueKey = getIssueKeyFromUrl();
+    if (!issueKey) {
+      return;
+    }
+    const stalker = document.querySelector("#stalker");
+    const pageHeader = stalker ? stalker.querySelector(".aui-page-header") : document.querySelector(".aui-page-header");
+    if (!pageHeader) {
+      return;
+    }
+    if (document.querySelector("#tm-jira-task-info") || document.querySelector("#tm-jira-task-form") || document.querySelector("#tm-jira-add-task")) {
+      return;
+    }
+    refreshTaskDisplay();
   }
   function initJiraPageIntegration() {
     injectTaskInfo();
@@ -1342,9 +1469,11 @@
       if (url !== lastUrl) {
         lastUrl = url;
         const oldBlock = document.querySelector("#tm-jira-task-info");
-        if (oldBlock) {
-          oldBlock.remove();
-        }
+        const oldForm = document.querySelector("#tm-jira-task-form");
+        const oldButton = document.querySelector("#tm-jira-add-task");
+        if (oldBlock) oldBlock.remove();
+        if (oldForm) oldForm.remove();
+        if (oldButton) oldButton.remove();
         setTimeout(injectTaskInfo, 100);
       }
     }).observe(document, { subtree: true, childList: true });
