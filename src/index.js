@@ -10,10 +10,11 @@ const currentPath = window.location.pathname;
 const isIssuePage = /^\/browse\/[A-Z]+-\d+/.test(currentPath);
 
 if (isIssuePage) {
-  // Страница просмотра задачи
+  // Страница просмотра задачи - только интеграция
   initJiraPageIntegration();
 } else if (currentPath.startsWith('/secure/')) {
-  // Dashboard
+  // Dashboard - туду-лист + интеграция
   main();
+  initJiraPageIntegration();
 }
 

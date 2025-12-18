@@ -4,6 +4,7 @@ import { loadTasks, saveTasks } from '../storage/index.js';
 import { rerenderList } from './rerender.js';
 import { renderItem } from './item.js';
 import { extractJiraKey, extractDueDate, fetchJiraIssue } from '../utils/task-parsing.js';
+import { updatePageMarkers } from '../jira-page-integration.js';
 
 /**
  * Сортировка задач: выполненные задачи в конец
@@ -196,6 +197,7 @@ export function renderUI(root, initialTasks) {
     const sorted = [...notDoneWithDate, ...notDoneWithoutDate, ...doneTasks];
     saveTasks(sorted);
     rerenderList(list, sorted, renderItem);
+    updatePageMarkers();
 
     // Активируем кнопку
     isSortedByDate = true;
@@ -249,6 +251,7 @@ export function renderUI(root, initialTasks) {
     addBtn.disabled = false;
     addBtn.textContent = '➤';
     rerenderList(list, sortedNext, renderItem);
+    updatePageMarkers();
     input.focus();
   });
 

@@ -3,6 +3,7 @@ import { loadTasks, saveTasks } from '../storage/index.js';
 import { startDrag } from '../dnd/index.js';
 import { rerenderList } from './rerender.js';
 import { extractJiraKey, extractDueDate, fetchJiraIssue } from '../utils/task-parsing.js';
+import { updatePageMarkers } from '../jira-page-integration.js';
 
 /**
  * Рендер одного элемента списка
@@ -197,6 +198,7 @@ export function renderItem(task) {
         if (list) {
           rerenderList(list, tasks, renderItem);
         }
+        updatePageMarkers();
       }
     });
     dateBtn.appendChild(gradient);
@@ -298,6 +300,7 @@ export function renderItem(task) {
         if (list) {
           rerenderList(list, tasks, renderItem);
         }
+        updatePageMarkers();
       }
     });
     jiraBtn.appendChild(jiraIcon);
@@ -351,6 +354,7 @@ export function renderItem(task) {
       if (list) {
         rerenderList(list, sortedTasks, renderItem);
       }
+      updatePageMarkers();
     }
   });
 
@@ -365,6 +369,7 @@ export function renderItem(task) {
     if (list) {
       rerenderList(list, next, renderItem);
     }
+    updatePageMarkers();
   });
 
   // DnD
@@ -525,6 +530,7 @@ export function startEditMode(row, task) {
       if (list) {
         rerenderList(list, tasks, renderItem);
       }
+      updatePageMarkers();
     }
   };
 

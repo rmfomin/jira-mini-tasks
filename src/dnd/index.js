@@ -1,4 +1,5 @@
 import { loadTasks, saveTasks } from '../storage/index.js';
+import { updatePageMarkers } from '../jira-page-integration.js';
 
 let dragState = {
   isDragging: false,
@@ -204,17 +205,19 @@ function handleDragEnd(event) {
       indicator.remove();
 
       const updatedTasks = persistOrderFromDom(listEl);
-      
+
       // Деактивируем кнопку сортировки после перемещения
       if (window.__tmDeactivateSortButton) {
         window.__tmDeactivateSortButton();
       }
-      
+
       const rerenderModule = window.__tmRerenderList;
       const renderItemModule = window.__tmRenderItem;
       if (rerenderModule && renderItemModule) {
         rerenderModule(listEl, updatedTasks, renderItemModule);
       }
+
+      updatePageMarkers();
     } else {
       indicator.remove();
       if (dragState.initialNextSibling) {
