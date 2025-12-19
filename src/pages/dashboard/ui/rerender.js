@@ -1,4 +1,4 @@
-import { empty } from '../utils/dom.js';
+import { empty } from '../../../common/utils/dom.js';
 import { updateHeaderCounts } from './header.js';
 
 /**

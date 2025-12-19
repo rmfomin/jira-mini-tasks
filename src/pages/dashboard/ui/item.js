@@ -1,9 +1,9 @@
-import { el, autosizeTextarea } from '../utils/dom.js';
-import { loadTasks, saveTasks } from '../storage/index.js';
+import { el, autosizeTextarea } from '../../../common/utils/dom.js';
+import { loadTasks, saveTasks } from '../../../common/storage/index.js';
 import { startDrag } from '../dnd/index.js';
 import { rerenderList } from './rerender.js';
-import { extractJiraKey, extractDueDate, fetchJiraIssue } from '../utils/task-parsing.js';
-import { updatePageMarkers } from '../jira-page-integration.js';
+import { extractJiraKey, extractDueDate, fetchJiraIssue } from '../../../common/utils/task-parsing.js';
+import { updatePageMarkers } from '../../browse/markers.js';
 
 /**
  * Рендер одного элемента списка

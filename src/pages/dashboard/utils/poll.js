@@ -1,4 +1,4 @@
-import { GADGET_ID, INIT_POLL_MS, INIT_POLL_MAX_TRIES } from '../constants.js';
+import { GADGET_ID, INIT_POLL_MS, INIT_POLL_MAX_TRIES } from '../../../common/constants.js';
 
 /**
  * Поиск целевого гаджета на дашборде с опросом

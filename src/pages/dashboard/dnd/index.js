@@ -1,5 +1,5 @@
-import { loadTasks, saveTasks } from '../storage/index.js';
-import { updatePageMarkers } from '../jira-page-integration.js';
+import { loadTasks, saveTasks } from '../../../common/storage/index.js';
+import { updatePageMarkers } from '../../browse/markers.js';
 
 let dragState = {
   isDragging: false,

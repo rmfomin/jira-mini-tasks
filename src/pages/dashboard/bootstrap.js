@@ -1,8 +1,8 @@
-import { CONTENT_SELECTOR, HEADER_SELECTOR, WRAPPER_ID } from './constants.js';
-import { empty, el } from './utils/dom.js';
+import { CONTENT_SELECTOR, HEADER_SELECTOR, WRAPPER_ID } from '../../common/constants.js';
+import { empty, el } from '../../common/utils/dom.js';
 import { pollForGadget } from './utils/poll.js';
 import { renderUI } from './ui/index.js';
-import { loadTasks } from './storage/index.js';
+import { loadTasks } from '../../common/storage/index.js';
 import { updateHeaderCounts } from './ui/header.js';
 
 let globalMenuCloserAttached = false;

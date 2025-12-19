@@ -1,4 +1,4 @@
-import { HEADER_SELECTOR } from '../constants.js';
+import { HEADER_SELECTOR } from '../../../common/constants.js';
 
 /**
  * Обновляет заголовок виджета количеством задач

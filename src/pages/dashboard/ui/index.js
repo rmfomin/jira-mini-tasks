@@ -1,10 +1,10 @@
-import { el, autosizeTextarea } from '../utils/dom.js';
-import { jiraRequest } from '../api/jira.js';
-import { loadTasks, saveTasks } from '../storage/index.js';
+import { el, autosizeTextarea } from '../../../common/utils/dom.js';
+import { jiraRequest } from '../../../common/api/jira.js';
+import { loadTasks, saveTasks } from '../../../common/storage/index.js';
 import { rerenderList } from './rerender.js';
 import { renderItem } from './item.js';
-import { extractJiraKey, extractDueDate, fetchJiraIssue } from '../utils/task-parsing.js';
-import { updatePageMarkers } from '../jira-page-integration.js';
+import { extractJiraKey, extractDueDate, fetchJiraIssue } from '../../../common/utils/task-parsing.js';
+import { updatePageMarkers } from '../../browse/markers.js';
 
 /**
  * Сортировка задач: выполненные задачи в конец
