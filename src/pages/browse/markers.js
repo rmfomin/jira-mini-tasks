@@ -12,38 +12,39 @@ function addTodoIndicator(element) {
   }
 
   let targetElement = element;
+  let insertMode = 'append';
 
   if (element.tagName === 'TR') {
     const summaryCell = element.querySelector('td.summary');
     if (summaryCell) {
-      targetElement = summaryCell;
-    }
-  }
+      const paragraph = summaryCell.querySelector('p');
+      const issueLink = paragraph ? paragraph.querySelector('a.issue-link') : null;
 
-  const computedPosition = window.getComputedStyle(targetElement).position;
-  if (computedPosition === 'static') {
-    targetElement.style.position = 'relative';
+      if (issueLink && paragraph) {
+        targetElement = paragraph;
+        insertMode = 'afterLink';
+      } else {
+        targetElement = summaryCell;
+      }
+    }
   }
 
   const indicator = document.createElement('span');
   indicator.className = TODO_INDICATOR_CLASS;
-  indicator.textContent = '📌 todo';
-  indicator.style.position = 'absolute';
-  indicator.style.top = '50%';
-  indicator.style.right = '0';
-  indicator.style.transform = 'translateY(-50%)';
-  indicator.style.fontSize = '11px';
+  indicator.textContent = '⚑';
+  indicator.style.fontSize = '14px';
   indicator.style.opacity = '0.5';
   indicator.style.fontWeight = 'normal';
-  indicator.style.color = '#666';
-  indicator.style.background = '#fff3cd';
+  indicator.style.color = '#1976d2';
+  indicator.style.background = '#e3f2fd';
   indicator.style.padding = '2px 6px';
   indicator.style.borderRadius = '4px';
-  indicator.style.border = '1px solid #ffc107';
+  indicator.style.border = '1px solid #90caf9';
   indicator.style.whiteSpace = 'nowrap';
   indicator.style.transition = 'opacity 0.2s ease';
-  indicator.style.zIndex = '100';
-  indicator.style.pointerEvents = 'none';
+  indicator.style.marginLeft = '8px';
+  indicator.style.display = 'inline-block';
+  indicator.style.verticalAlign = 'middle';
 
   targetElement.addEventListener('mouseenter', () => {
     indicator.style.opacity = '1';
@@ -53,7 +54,19 @@ function addTodoIndicator(element) {
     indicator.style.opacity = '0.5';
   });
 
-  targetElement.appendChild(indicator);
+  if (insertMode === 'afterLink') {
+    const issueLink = targetElement.querySelector('a.issue-link');
+    if (issueLink && issueLink.nextSibling) {
+      targetElement.insertBefore(indicator, issueLink.nextSibling);
+    } else if (issueLink) {
+      targetElement.appendChild(indicator);
+    } else {
+      targetElement.appendChild(indicator);
+    }
+  } else {
+    targetElement.appendChild(indicator);
+  }
+
   element.setAttribute(TODO_INDICATOR_ATTR, 'true');
 }
 
@@ -65,16 +78,7 @@ function removeTodoIndicator(element) {
     return;
   }
 
-  let targetElement = element;
-
-  if (element.tagName === 'TR') {
-    const summaryCell = element.querySelector('td.summary');
-    if (summaryCell) {
-      targetElement = summaryCell;
-    }
-  }
-
-  const indicator = targetElement.querySelector(`.${TODO_INDICATOR_CLASS}`);
+  const indicator = element.querySelector(`.${TODO_INDICATOR_CLASS}`);
   if (indicator) {
     indicator.remove();
   }
