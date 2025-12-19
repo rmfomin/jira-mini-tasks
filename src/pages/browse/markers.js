@@ -31,28 +31,20 @@ function addTodoIndicator(element) {
 
   const indicator = document.createElement('span');
   indicator.className = TODO_INDICATOR_CLASS;
-  indicator.textContent = '⚑';
+  indicator.textContent = '🚩 todo';
   indicator.style.fontSize = '14px';
-  indicator.style.opacity = '0.5';
+  indicator.style.opacity = '0.7';
   indicator.style.fontWeight = 'normal';
-  indicator.style.color = '#1976d2';
-  indicator.style.background = '#e3f2fd';
+  indicator.style.color = '#000000';
+  indicator.style.background = '#f3f3f3';
   indicator.style.padding = '2px 6px';
   indicator.style.borderRadius = '4px';
-  indicator.style.border = '1px solid #90caf9';
+  indicator.style.border = '1px solid #a2a2a2';
   indicator.style.whiteSpace = 'nowrap';
   indicator.style.transition = 'opacity 0.2s ease';
   indicator.style.marginLeft = '8px';
   indicator.style.display = 'inline-block';
   indicator.style.verticalAlign = 'middle';
-
-  targetElement.addEventListener('mouseenter', () => {
-    indicator.style.opacity = '1';
-  });
-
-  targetElement.addEventListener('mouseleave', () => {
-    indicator.style.opacity = '0.5';
-  });
 
   if (insertMode === 'afterLink') {
     const issueLink = targetElement.querySelector('a.issue-link');
