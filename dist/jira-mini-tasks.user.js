@@ -1037,11 +1037,22 @@
         }
         updatePageMarkers();
       }
+      if (outsideClickHandler) {
+        document.removeEventListener("click", outsideClickHandler);
+      }
     };
     const handleCancel = () => {
       const list2 = row.parentElement;
       if (list2) {
         rerenderList(list2, loadTasks(), renderItem);
+      }
+      if (outsideClickHandler) {
+        document.removeEventListener("click", outsideClickHandler);
+      }
+    };
+    const outsideClickHandler = (e) => {
+      if (!row.contains(e.target)) {
+        handleCancel();
       }
     };
     input.addEventListener("keydown", (e) => {
@@ -1053,6 +1064,9 @@
         handleCancel();
       }
     });
+    setTimeout(() => {
+      document.addEventListener("click", outsideClickHandler);
+    }, 0);
   }
 
   // src/pages/dashboard/ui/index.js

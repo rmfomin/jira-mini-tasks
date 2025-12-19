@@ -532,12 +532,24 @@ export function startEditMode(row, task) {
       }
       updatePageMarkers();
     }
+    if (outsideClickHandler) {
+      document.removeEventListener('click', outsideClickHandler);
+    }
   };
 
   const handleCancel = () => {
     const list = row.parentElement;
     if (list) {
       rerenderList(list, loadTasks(), renderItem);
+    }
+    if (outsideClickHandler) {
+      document.removeEventListener('click', outsideClickHandler);
+    }
+  };
+
+  const outsideClickHandler = (e) => {
+    if (!row.contains(e.target)) {
+      handleCancel();
     }
   };
 
@@ -550,4 +562,8 @@ export function startEditMode(row, task) {
       handleCancel();
     }
   });
+
+  setTimeout(() => {
+    document.addEventListener('click', outsideClickHandler);
+  }, 0);
 }
