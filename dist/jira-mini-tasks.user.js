@@ -553,7 +553,7 @@
     row.style.flexWrap = "wrap";
     row.style.padding = "6px";
     row.style.paddingRight = "20px";
-    row.style.border = "1px solid #ededed";
+    row.style.border = "1px solid #8b8b8b";
     row.style.borderRadius = "6px";
     row.style.position = "relative";
     row.dataset.id = String(task.id);
@@ -1154,7 +1154,7 @@
     const list = el("div", { id: "tm-list" });
     list.style.display = "flex";
     list.style.flexDirection = "column";
-    list.style.gap = "6px";
+    list.style.gap = "12px";
     const sortedInitialTasks = sortTasksWithDoneAtEnd(initialTasks);
     sortedInitialTasks.forEach((t) => list.appendChild(renderItem(t)));
     root.appendChild(form);

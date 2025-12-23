@@ -15,7 +15,7 @@ export function renderItem(task) {
   row.style.flexWrap = 'wrap';
   row.style.padding = '6px';
   row.style.paddingRight = '20px';
-  row.style.border = '1px solid #ededed';
+  row.style.border = '1px solid #8b8b8b';
   row.style.borderRadius = '6px';
   row.style.position = 'relative';
   row.dataset.id = String(task.id);
